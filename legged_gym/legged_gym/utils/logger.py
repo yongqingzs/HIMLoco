@@ -30,16 +30,19 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+import datetime
+import os
 from collections import defaultdict
 from multiprocessing import Process, Value
 
 class Logger:
-    def __init__(self, dt):
+    def __init__(self, dt, plot_path=None):
         self.state_log = defaultdict(list)
         self.rew_log = defaultdict(list)
         self.dt = dt
         self.num_episodes = 0
         self.plot_process = None
+        self.plot_path = plot_path
 
     def log_state(self, key, value):
         self.state_log[key].append(value)
@@ -63,6 +66,7 @@ class Logger:
         self.plot_process.start()
 
     def _plot(self):
+        plt.figure(figsize=(12, 12))
         nb_rows = 3
         nb_cols = 3
         fig, axs = plt.subplots(nb_rows, nb_cols)
@@ -123,7 +127,18 @@ class Logger:
         if log["dof_torque"]!=[]: a.plot(time, log["dof_torque"], label='measured')
         a.set(xlabel='time [s]', ylabel='Joint Torque [Nm]', title='Torque')
         a.legend()
-        plt.show()
+        # plt.show()
+        filename = f'logger_plot_{datetime.datetime.now().strftime("%Y_%m%d_%H%M")}.png'
+        if self.plot_path:
+            frames_dir = os.path.join(self.plot_path, "frames")
+            os.makedirs(frames_dir, exist_ok=True)
+            save_path = os.path.join(frames_dir, filename)
+        else:
+            save_path = filename
+        plt.gcf().set_size_inches(12, 9)
+        plt.tight_layout()
+        plt.savefig(save_path, dpi=200, bbox_inches='tight', pad_inches=0.1)
+
 
     def print_rewards(self):
         print("Average rewards per second:")

@@ -73,7 +73,8 @@ def play(args, x_vel=1.0, y_vel=0.0, yaw_vel=0.0):
         export_policy_as_jit(ppo_runner.alg.actor_critic, path)
         print('Exported policy as jit script to: ', path)
 
-    logger = Logger(env.dt)
+    plt_path = os.path.join(LEGGED_GYM_ROOT_DIR, 'logs', train_cfg.runner.experiment_name, 'exported')
+    logger = Logger(env.dt, plot_path=plt_path)
     robot_index = 0 # which robot is used for logging
     joint_index = 1 # which joint is used for logging
     stop_state_log = 100 # number of steps before plotting states
@@ -126,10 +127,13 @@ def play(args, x_vel=1.0, y_vel=0.0, yaw_vel=0.0):
                     logger.log_rewards(infos["episode"], num_episodes)
         elif i==stop_rew_log:
             logger.print_rewards()
+            exit()
 
 if __name__ == '__main__':
     EXPORT_POLICY = True
-    RECORD_FRAMES = False
+    RECORD_FRAMES = True
     MOVE_CAMERA = False
     args = get_args()
+    args.headless = True
+    args.task = "go1"
     play(args, x_vel=1.0, y_vel=0.0, yaw_vel=0.0)
