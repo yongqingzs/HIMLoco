@@ -60,3 +60,6 @@ runs
 __pycache__
 
 tmp/
+docs/
+play_debug.py
+train_debug.py
