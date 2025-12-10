@@ -72,16 +72,38 @@ NOTE: 如果后面未提及 urdf，均与该日期的 urdf 保持一致
 change like 1119  
 ```
 ```bash
-python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 8192
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 8192  --run_name kp20
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec08_03-51-52_kp20 --checkpoint 4800
 ```
 
 ```txt
 对比1208, 仅改变 kp=40, kd=1
 ```
 ```bash
-CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 8192
+CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 8192 -run_name kp40
 ```
 
+- 1209
+```txt
+kp=20,kd=0.5
+
+randomize_motor_strength = True
+motor_strength_range = [0.9, 1.1]
+```
+
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 8192 --run_name random_motor_strength
+```
+
+- 1210
+```txt
+resume 1209
+```
+
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --resume --load_run Dec09_06-58-12_random_motor_strength --seed 1 --num_envs 8192
+```
 
 ### no_foot_clearance
 set 'foot_clearance' to 0 in go1_config.py   
