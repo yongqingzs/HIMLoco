@@ -103,15 +103,106 @@ resume 1209
 
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --resume --load_run Dec09_06-58-12_random_motor_strength --seed 1 --num_envs 8192
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec10_03-27-11_ --checkpoint 10000
 ```
 
-### no_foot_clearance
-set 'foot_clearance' to 0 in go1_config.py   
-- 1117
+- 1210-1
+```txt
+change from 1209
+```
+
+1209
+```python
+pos = [0.0, 0.0, 0.42]
+base_height_target = 0.30
+
+class domain_rand:
+    randomize_payload_mass = True
+    payload_mass_range = [-1, 2]
+
+    randomize_com_displacement = True
+    com_displacement_range = [-0.05, 0.05]
+
+    randomize_link_mass = False
+    link_mass_range = [0.9, 1.1]
+    
+    randomize_friction = True
+    friction_range = [0.2, 1.25]
+    
+    randomize_restitution = False
+    restitution_range = [0., 1.0]
+    
+    randomize_motor_strength = True
+    motor_strength_range = [0.9, 1.1]
+    
+    randomize_kp = True
+    kp_range = [0.9, 1.1]
+    
+    randomize_kd = True
+    kd_range = [0.9, 1.1]
+    
+    randomize_initial_joint_pos = True
+    initial_joint_pos_range = [0.5, 1.5]
+    
+    disturbance = True
+    disturbance_range = [-30.0, 30.0]
+    disturbance_interval = 8
+    
+    push_robots = True
+    push_interval_s = 16
+    max_push_vel_xy = 1.
+
+    delay = True
+
+```
+
+1210-1
+```python
+pos = [0.0, 0.0, 0.33]
+base_height_target = 0.33
+
+class domain_rand:
+    randomize_payload_mass = True
+    payload_mass_range = [-1, 3]
+
+    randomize_com_displacement = True
+    com_displacement_range = [-0.1, 0.1]
+
+    randomize_link_mass = True
+    link_mass_range = [0.8, 1.2]
+    
+    randomize_friction = True
+    friction_range = [0.2, 2.75]
+    
+    randomize_restitution = True
+    restitution_range = [0., 1.0]
+    
+    randomize_motor_strength = True
+    motor_strength_range = [0.8, 1.2]
+    
+    randomize_kp = True
+    kp_range = [0.8, 1.2]
+    
+    randomize_kd = True
+    kd_range = [0.8, 1.2]
+    
+    randomize_initial_joint_pos = True
+    initial_joint_pos_range = [0.5, 1.5]
+    
+    disturbance = True
+    disturbance_range = [-30.0, 30.0]
+    disturbance_interval = 8
+    
+    push_robots = True
+    push_interval_s = 16
+    max_push_vel_xy = 1.
+
+    delay = True
+```
+
 ```bash
-python3 train.py --headless --task go1 --max_iterations 5000 --resume --sim_device cuda:0 --run_name no_foot_clearance --load_run Nov17_08-39-59_no_foot_clearance --seed 66 --num_envs 8192
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 8192 --run_name domain_rand_v1
 
-python3 play.py --headless --task go1 --sim_device cuda:0 --load_run Nov17_08-39-59_no_foot_clearance --checkpoint 1000
-
-python3 play.py --headless --task go1 --sim_device cuda:0 --load_run Nov18_02-11-25_no_foot_clearance --checkpoint 2000
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec10_10-25-50_domain_rand_v1 --checkpoint 4800
 ```
