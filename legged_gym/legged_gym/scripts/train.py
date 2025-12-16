@@ -45,4 +45,10 @@ def train(args, headless=True):
 
 if __name__ == '__main__':
     args = get_args()
+    debug = False
+    if debug:
+        args.task = 'go1'
+        args.run_name = 'debug'
+        args.headless = True
+        args.max_iterations = 100
     train(args, headless=True)

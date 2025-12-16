@@ -78,7 +78,7 @@ class Go1RoughCfg( LeggedRobotCfg ):
         max_init_terrain_level = 5 # starting curriculum state
         terrain_length = 8.
         terrain_width = 8.
-        num_rows= 10 # number of terrain rows (levels)
+        num_rows= 6 # number of terrain rows (levels)
         num_cols = 20 # number of terrain cols (types)
         # terrain types: [smooth slope, rough slope, stairs up, stairs down, discrete]
         terrain_proportions = [0.1, 0.2, 0.3, 0.3, 0.1]
@@ -87,10 +87,11 @@ class Go1RoughCfg( LeggedRobotCfg ):
 
     class commands( LeggedRobotCfg.commands ):
         curriculum = True
-        max_curriculum = 2.0
+        max_curriculum = 3.0
         num_commands = 4 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
         resampling_time = 10. # time before command are changed[s]
         heading_command = True # if true: compute ang vel command from heading error
+        use_terrain_aware_commands = True # enable terrain-aware command resampling per paper
         class ranges( LeggedRobotCfg.commands.ranges):
             lin_vel_x = [-1.0, 1.0] # min max [m/s]
             lin_vel_y = [-1.0, 1.0]   # min max [m/s]
@@ -112,7 +113,7 @@ class Go1RoughCfg( LeggedRobotCfg ):
         randomize_com_displacement = True
         com_displacement_range = [-0.05, 0.05]
 
-        randomize_link_mass = False
+        randomize_link_mass = True
         link_mass_range = [0.9, 1.1]
         
         randomize_friction = True
@@ -182,5 +183,6 @@ class Go1RoughCfgPPO( LeggedRobotCfgPPO ):
     class runner( LeggedRobotCfgPPO.runner ):
         run_name = ''
         experiment_name = 'rough_go1'
+        save_interval = 100
 
   

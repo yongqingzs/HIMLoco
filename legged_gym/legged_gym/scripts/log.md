@@ -90,6 +90,8 @@ kp=20,kd=0.5
 
 randomize_motor_strength = True
 motor_strength_range = [0.9, 1.1]
+
+NOTE: 表现正常
 ```
 
 ```bash
@@ -99,6 +101,8 @@ python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --t
 - 1210
 ```txt
 resume 1209
+
+NOTE：震荡
 ```
 
 ```bash
@@ -110,99 +114,110 @@ python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --ta
 - 1210-1
 ```txt
 change from 1209
-```
 
-1209
-```python
-pos = [0.0, 0.0, 0.42]
-base_height_target = 0.30
-
-class domain_rand:
-    randomize_payload_mass = True
-    payload_mass_range = [-1, 2]
-
-    randomize_com_displacement = True
-    com_displacement_range = [-0.05, 0.05]
-
-    randomize_link_mass = False
-    link_mass_range = [0.9, 1.1]
-    
-    randomize_friction = True
-    friction_range = [0.2, 1.25]
-    
-    randomize_restitution = False
-    restitution_range = [0., 1.0]
-    
-    randomize_motor_strength = True
-    motor_strength_range = [0.9, 1.1]
-    
-    randomize_kp = True
-    kp_range = [0.9, 1.1]
-    
-    randomize_kd = True
-    kd_range = [0.9, 1.1]
-    
-    randomize_initial_joint_pos = True
-    initial_joint_pos_range = [0.5, 1.5]
-    
-    disturbance = True
-    disturbance_range = [-30.0, 30.0]
-    disturbance_interval = 8
-    
-    push_robots = True
-    push_interval_s = 16
-    max_push_vel_xy = 1.
-
-    delay = True
-
-```
-
-1210-1
-```python
-pos = [0.0, 0.0, 0.33]
-base_height_target = 0.33
-
-class domain_rand:
-    randomize_payload_mass = True
-    payload_mass_range = [-1, 3]
-
-    randomize_com_displacement = True
-    com_displacement_range = [-0.1, 0.1]
-
-    randomize_link_mass = True
-    link_mass_range = [0.8, 1.2]
-    
-    randomize_friction = True
-    friction_range = [0.2, 2.75]
-    
-    randomize_restitution = True
-    restitution_range = [0., 1.0]
-    
-    randomize_motor_strength = True
-    motor_strength_range = [0.8, 1.2]
-    
-    randomize_kp = True
-    kp_range = [0.8, 1.2]
-    
-    randomize_kd = True
-    kd_range = [0.8, 1.2]
-    
-    randomize_initial_joint_pos = True
-    initial_joint_pos_range = [0.5, 1.5]
-    
-    disturbance = True
-    disturbance_range = [-30.0, 30.0]
-    disturbance_interval = 8
-    
-    push_robots = True
-    push_interval_s = 16
-    max_push_vel_xy = 1.
-
-    delay = True
+NOTE: 失败
 ```
 
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 8192 --run_name domain_rand_v1
 
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec10_10-25-50_domain_rand_v1 --checkpoint 4800
+```
+
+- 1211
+```txt
+like 1209, but:
+num_rows= 6 # number of terrain rows (levels)
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 8192
+
+CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec11_03-39-53_ --checkpoint 5000
+```
+
+- 1212
+```txt
+kp_range = [0.8, 1.2]
+kd_range = [0.8, 1.2]
+num_rows= 6 
+
+NOTE：不好说
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 8192
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec12_03-38-39_ --checkpoint 4900
+```
+
+- 1213
+```txt
+max_curriculum = 3.0
+num_rows= 6
+
+NOTE：失败，发散
+```
+
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 8192
+```
+
+- 1213
+```txt
+randomize_link_mass = True
+num_rows= 6
+
+NOTE: 表现正常
+```
+
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 8192 --run_name link_mass_rand
+
+CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec13_08-20-10_link_mass_rand --checkpoint 3300
+```
+
+- 1214
+```txt
+randomize_link_mass = True
+num_rows= 6
+
+max_curriculum = 1.5
+
+NOTE: 没有发散，但髋关节偏移
+```
+
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 8192 --run_name lmr_1d5
+
+CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec14_03-22-06_lmr_1d5 --checkpoint 4600
+```
+
+- 1215
+```txt
+randomize_link_mass = True
+num_rows= 6
+
+max_curriculum = 1.5
+
+randomize_restitution = True
+dof_pos_limits = -0.01
+dof_vel_limits = -0.01
+torque_limits = -0.001
+```
+
+```bash
+CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 8192 --run_name pl_rr
+```
+
+- 1215-1
+```txt
+修改为分层命令课程
+
+randomize_link_mass = True
+num_rows= 6
+
+max_curriculum = 3
+```
+
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 8192 --run_name part_cmds
 ```

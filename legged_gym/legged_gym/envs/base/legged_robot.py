@@ -184,7 +184,11 @@ class LeggedRobot(BaseTask):
         self._reset_dofs(env_ids)
         self._reset_root_states(env_ids)
 
-        self._resample_commands(env_ids)
+        # self._resample_commands(env_ids)
+        if self.cfg.commands.use_terrain_aware_commands:
+            self._resample_part_commands(env_ids)
+        else:
+            self._resample_commands(env_ids)
 
         # reset buffers
         self.last_actions[env_ids] = 0.
@@ -439,7 +443,10 @@ class LeggedRobot(BaseTask):
         """
         # 
         env_ids = (self.episode_length_buf % int(self.cfg.commands.resampling_time / self.dt)==0).nonzero(as_tuple=False).flatten()
-        self._resample_commands(env_ids)
+        if self.cfg.commands.use_terrain_aware_commands:
+            self._resample_part_commands(env_ids)
+        else:
+            self._resample_commands(env_ids)
         if self.cfg.commands.heading_command:
             forward = quat_apply(self.base_quat, self.forward_vec)
             heading = torch.atan2(forward[:, 1], forward[:, 0])
@@ -472,6 +479,78 @@ class LeggedRobot(BaseTask):
 
         # set y commands of high vel envs to zero
         self.commands[high_vel_env_ids, 1:2] *= (torch.norm(self.commands[high_vel_env_ids, 0:1], dim=1) < 1.0).unsqueeze(1)
+
+        # set small commands to zero
+        self.commands[env_ids, :2] *= (torch.norm(self.commands[env_ids, :2], dim=1) > 0.2).unsqueeze(1)
+
+    def _resample_part_commands(self, env_ids):
+        """ Randommly select commands of some environments
+
+        Args:
+            env_ids (List[int]): Environments ids for which new commands are needed
+        """
+        # base ranges (curriculum-adjusted outside, e.g., update_command_curriculum)
+        lin_x_min = torch.full((len(env_ids), 1), self.command_ranges["lin_vel_x"][0], device=self.device)
+        lin_x_max = torch.full((len(env_ids), 1), self.command_ranges["lin_vel_x"][1], device=self.device)
+        ang_min = torch.full((len(env_ids), 1), self.command_ranges["ang_vel_yaw"][0], device=self.device)
+        ang_max = torch.full((len(env_ids), 1), self.command_ranges["ang_vel_yaw"][1], device=self.device)
+
+        # Terrain-aware command curriculum
+        # - 复杂地形（楼梯、离散障碍）固定窄范围: lin_x[-1,1], ang_yaw[-2,2]
+        # - 坡地/粗糙坡地：允许随课程增长到 [-3,3]（使用当前 command_ranges 并截断到 [-3,3]）
+        # - 平地或无地形信息：保持现有课程增长逻辑（command_ranges 由 update_command_curriculum 调整）
+        if self.terrain_type_bins is not None:
+            terrain_types = self.terrain_types[env_ids]
+            bins = self.terrain_type_bins
+            slope_mask = terrain_types < bins[0]
+            rough_slope_mask = (terrain_types >= bins[0]) & (terrain_types < bins[1])
+            stairs_mask = (terrain_types >= bins[1]) & (terrain_types < bins[3])
+            discrete_mask = terrain_types >= bins[3]
+
+            slope_like = slope_mask | rough_slope_mask
+            complex_mask = stairs_mask | discrete_mask
+
+            # slopes / rough slopes: clamp to [-3,3] allowing curriculum to grow up to max_curriculum
+            lin_x_min[slope_like] = torch.clamp(lin_x_min[slope_like], min=-3.0)
+            lin_x_max[slope_like] = torch.clamp(lin_x_max[slope_like], max=3.0)
+            ang_min[slope_like] = torch.clamp(ang_min[slope_like], min=-3.0)
+            ang_max[slope_like] = torch.clamp(ang_max[slope_like], max=3.0)
+            # lin_x_min[slope_like] = -1.0
+            # lin_x_max[slope_like] = 1.0
+            # ang_min[slope_like] = -2.0
+            # ang_max[slope_like] = 2.0
+
+            # complex (stairs, discrete obstacles): fixed narrow range
+            lin_x_min[complex_mask] = -1.0
+            lin_x_max[complex_mask] = 1.0
+            ang_min[complex_mask] = -2.0
+            ang_max[complex_mask] = 2.0
+
+        # sample commands with per-env ranges
+        lin_x = torch.rand((len(env_ids), 1), device=self.device) * (lin_x_max - lin_x_min) + lin_x_min
+        self.commands[env_ids, 0] = lin_x.squeeze(1)
+        self.commands[env_ids, 1] = torch_rand_float(
+            self.command_ranges["lin_vel_y"][0], self.command_ranges["lin_vel_y"][1], (len(env_ids), 1), device=self.device
+        ).squeeze(1)
+        if self.cfg.commands.heading_command:
+            self.commands[env_ids, 3] = torch_rand_float(
+                self.command_ranges["heading"][0], self.command_ranges["heading"][1], (len(env_ids), 1), device=self.device
+            ).squeeze(1)
+        else:
+            ang = torch.rand((len(env_ids), 1), device=self.device) * (ang_max - ang_min) + ang_min
+            self.commands[env_ids, 2] = ang.squeeze(1)
+
+        high_vel_mask = (env_ids < (self.num_envs * 0.2))
+        high_vel_env_ids = env_ids[high_vel_mask.nonzero(as_tuple=True)]
+
+        if len(high_vel_env_ids) > 0:
+            hv_lin_x_min = lin_x_min[high_vel_mask]
+            hv_lin_x_max = lin_x_max[high_vel_mask]
+            hv_lin_x = torch.rand((len(high_vel_env_ids), 1), device=self.device) * (hv_lin_x_max - hv_lin_x_min) + hv_lin_x_min
+            self.commands[high_vel_env_ids, 0] = hv_lin_x.squeeze(1)
+
+            # set y commands of high vel envs to zero when x speed is high
+            self.commands[high_vel_env_ids, 1:2] *= (torch.norm(self.commands[high_vel_env_ids, 0:1], dim=1) < 1.0).unsqueeze(1)
 
         # set small commands to zero
         self.commands[env_ids, :2] *= (torch.norm(self.commands[env_ids, :2], dim=1) > 0.2).unsqueeze(1)
@@ -907,6 +986,11 @@ class LeggedRobot(BaseTask):
             self.max_terrain_level = self.cfg.terrain.num_rows
             self.terrain_origins = torch.from_numpy(self.terrain.env_origins).to(self.device).to(torch.float)
             self.env_origins[:] = self.terrain_origins[self.terrain_levels, self.terrain_types]
+            # precompute terrain type column thresholds (for command curriculum per terrain type)
+            self.terrain_type_bins = torch.tensor(
+                [int(np.ceil(p * self.cfg.terrain.num_cols)) for p in self.terrain.proportions],
+                device=self.device,
+            )
         else:
             self.custom_origins = False
             self.env_origins = torch.zeros(self.num_envs, 3, device=self.device, requires_grad=False)
@@ -918,6 +1002,7 @@ class LeggedRobot(BaseTask):
             self.env_origins[:, 0] = spacing * xx.flatten()[:self.num_envs]
             self.env_origins[:, 1] = spacing * yy.flatten()[:self.num_envs]
             self.env_origins[:, 2] = 0.
+            self.terrain_type_bins = None
 
     def _parse_cfg(self, cfg):
         self.dt = self.cfg.control.decimation * self.sim_params.dt
