@@ -221,3 +221,65 @@ max_curriculum = 3
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 8192 --run_name part_cmds
 ```
+
+- 1216
+```txt
+更新分层命令课程
+--resume --load_run Dec13_08-20-10_link_mass_rand --checkpoint 2000
+
+randomize_link_mass = True
+num_rows= 6
+max_curriculum = 3
+resampling_time = 25. 
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name part_cmds1 --resume --load_run Dec13_08-20-10_link_mass_rand --checkpoint 2000
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec16_05-52-49_part_cmds1 --checkpoint 500
+```
+
+- 1216-1
+```txt
+和1216一致的速度课程
+
+randomize_link_mass = True
+num_rows= 6
+max_curriculum = 2
+resampling_time = 25. 
+
+default_joint_angles = { # = target angles [rad] when action = 0.0
+    'FL_hip_joint': 0.0,   # [rad]
+    'RL_hip_joint': 0.0,   # [rad]
+    'FR_hip_joint': -0.0,  # [rad]
+    'RR_hip_joint': -0.0,   # [rad]
+
+    'FL_thigh_joint': 0.8,     # [rad]
+    'RL_thigh_joint': 0.8,   # [rad]
+    'FR_thigh_joint': 0.8,     # [rad]
+    'RR_thigh_joint': 0.8,   # [rad]
+
+    'FL_calf_joint': -1.5,   # [rad]
+    'RL_calf_joint': -1.5,    # [rad]
+    'FR_calf_joint': -1.5,  # [rad]
+    'RR_calf_joint': -1.5,    # [rad]
+}
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name pc_mc2
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec16_09-07-55_pc_mc2 --checkpoint 4500
+```
+
+- 1216-2
+```txt
+和1216一致的速度课程
+--resume --load_run Dec16_05-52-49_part_cmds1 --checkpoint 500
+
+randomize_link_mass = True
+num_rows= 6
+max_curriculum = 2
+resampling_time = 25. 
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name part_cmds2 --resume  --load_run Dec16_05-52-49_part_cmds1 --checkpoint 500
+```

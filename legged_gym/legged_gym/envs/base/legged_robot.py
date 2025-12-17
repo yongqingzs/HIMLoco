@@ -489,71 +489,52 @@ class LeggedRobot(BaseTask):
         Args:
             env_ids (List[int]): Environments ids for which new commands are needed
         """
-        # base ranges (curriculum-adjusted outside, e.g., update_command_curriculum)
-        lin_x_min = torch.full((len(env_ids), 1), self.command_ranges["lin_vel_x"][0], device=self.device)
-        lin_x_max = torch.full((len(env_ids), 1), self.command_ranges["lin_vel_x"][1], device=self.device)
-        ang_min = torch.full((len(env_ids), 1), self.command_ranges["ang_vel_yaw"][0], device=self.device)
-        ang_max = torch.full((len(env_ids), 1), self.command_ranges["ang_vel_yaw"][1], device=self.device)
+        # default ranges from command_ranges
+        lin_x_low = self.command_ranges["lin_vel_x"][0]
+        lin_x_high = self.command_ranges["lin_vel_x"][1]
+        ang_low = self.command_ranges["ang_vel_yaw"][0]
+        ang_high = self.command_ranges["ang_vel_yaw"][1]
 
-        # Terrain-aware command curriculum
-        # - 复杂地形（楼梯、离散障碍）固定窄范围: lin_x[-1,1], ang_yaw[-2,2]
-        # - 坡地/粗糙坡地：允许随课程增长到 [-3,3]（使用当前 command_ranges 并截断到 [-3,3]）
-        # - 平地或无地形信息：保持现有课程增长逻辑（command_ranges 由 update_command_curriculum 调整）
+        # Terrain-aware adjustment: only调整范围，采样逻辑与 _resample_commands 保持一致
         if self.terrain_type_bins is not None:
             terrain_types = self.terrain_types[env_ids]
             bins = self.terrain_type_bins
-            slope_mask = terrain_types < bins[0]
-            rough_slope_mask = (terrain_types >= bins[0]) & (terrain_types < bins[1])
-            stairs_mask = (terrain_types >= bins[1]) & (terrain_types < bins[3])
-            discrete_mask = terrain_types >= bins[3]
+            slope_like = (terrain_types < bins[0]) | ((terrain_types >= bins[0]) & (terrain_types < bins[1]))
+            complex_mask = (terrain_types >= bins[1]) & (terrain_types < bins[3]) | (terrain_types >= bins[3])
 
-            slope_like = slope_mask | rough_slope_mask
-            complex_mask = stairs_mask | discrete_mask
+            # slopes/rough slopes: 放宽到 [-3,3]，但不超过当前 curriculum 限制
+            if torch.any(slope_like):
+                lin_x_low = max(lin_x_low, -3.0)
+                lin_x_high = min(lin_x_high, 3.0)
+                ang_low = max(ang_low, -3.0)
+                ang_high = min(ang_high, 3.0)
 
-            # slopes / rough slopes: clamp to [-3,3] allowing curriculum to grow up to max_curriculum
-            lin_x_min[slope_like] = torch.clamp(lin_x_min[slope_like], min=-3.0)
-            lin_x_max[slope_like] = torch.clamp(lin_x_max[slope_like], max=3.0)
-            ang_min[slope_like] = torch.clamp(ang_min[slope_like], min=-3.0)
-            ang_max[slope_like] = torch.clamp(ang_max[slope_like], max=3.0)
-            # lin_x_min[slope_like] = -1.0
-            # lin_x_max[slope_like] = 1.0
-            # ang_min[slope_like] = -2.0
-            # ang_max[slope_like] = 2.0
+            # complex (stairs, discrete obstacles): 固定窄范围
+            if torch.any(complex_mask):
+                lin_x_low = -1.0
+                lin_x_high = 1.0
+                ang_low = -2.0
+                ang_high = 2.0
 
-            # complex (stairs, discrete obstacles): fixed narrow range
-            lin_x_min[complex_mask] = -1.0
-            lin_x_max[complex_mask] = 1.0
-            ang_min[complex_mask] = -2.0
-            ang_max[complex_mask] = 2.0
-
-        # sample commands with per-env ranges
-        lin_x = torch.rand((len(env_ids), 1), device=self.device) * (lin_x_max - lin_x_min) + lin_x_min
-        self.commands[env_ids, 0] = lin_x.squeeze(1)
-        self.commands[env_ids, 1] = torch_rand_float(
-            self.command_ranges["lin_vel_y"][0], self.command_ranges["lin_vel_y"][1], (len(env_ids), 1), device=self.device
-        ).squeeze(1)
+        # sample commands (保持与 _resample_commands 一致的结构)
+        self.commands[env_ids, 0] = torch_rand_float(lin_x_low, lin_x_high, (len(env_ids), 1), device=self.device).squeeze(1)
+        self.commands[env_ids, 1] = torch_rand_float(self.command_ranges["lin_vel_y"][0], self.command_ranges["lin_vel_y"][1], (len(env_ids), 1), device=self.device).squeeze(1)
         if self.cfg.commands.heading_command:
-            self.commands[env_ids, 3] = torch_rand_float(
-                self.command_ranges["heading"][0], self.command_ranges["heading"][1], (len(env_ids), 1), device=self.device
-            ).squeeze(1)
+            self.commands[env_ids, 3] = torch_rand_float(self.command_ranges["heading"][0], self.command_ranges["heading"][1], (len(env_ids), 1), device=self.device).squeeze(1)
         else:
-            ang = torch.rand((len(env_ids), 1), device=self.device) * (ang_max - ang_min) + ang_min
-            self.commands[env_ids, 2] = ang.squeeze(1)
+            self.commands[env_ids, 2] = torch_rand_float(ang_low, ang_high, (len(env_ids), 1), device=self.device).squeeze(1)
 
-        high_vel_mask = (env_ids < (self.num_envs * 0.2))
-        high_vel_env_ids = env_ids[high_vel_mask.nonzero(as_tuple=True)]
+        high_vel_env_ids = (env_ids < (self.num_envs * 0.2))
+        high_vel_env_ids = env_ids[high_vel_env_ids.nonzero(as_tuple=True)]
 
-        if len(high_vel_env_ids) > 0:
-            hv_lin_x_min = lin_x_min[high_vel_mask]
-            hv_lin_x_max = lin_x_max[high_vel_mask]
-            hv_lin_x = torch.rand((len(high_vel_env_ids), 1), device=self.device) * (hv_lin_x_max - hv_lin_x_min) + hv_lin_x_min
-            self.commands[high_vel_env_ids, 0] = hv_lin_x.squeeze(1)
+        self.commands[high_vel_env_ids, 0] = torch_rand_float(lin_x_low, lin_x_high, (len(high_vel_env_ids), 1), device=self.device).squeeze(1)
 
-            # set y commands of high vel envs to zero when x speed is high
-            self.commands[high_vel_env_ids, 1:2] *= (torch.norm(self.commands[high_vel_env_ids, 0:1], dim=1) < 1.0).unsqueeze(1)
+        # set y commands of high vel envs to zero
+        self.commands[high_vel_env_ids, 1:2] *= (torch.norm(self.commands[high_vel_env_ids, 0:1], dim=1) < 1.0).unsqueeze(1)
 
         # set small commands to zero
         self.commands[env_ids, :2] *= (torch.norm(self.commands[env_ids, :2], dim=1) > 0.2).unsqueeze(1)
+
 
     def _compute_torques(self, actions):
         """ Compute torques from actions.

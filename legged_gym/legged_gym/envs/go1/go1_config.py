@@ -87,9 +87,9 @@ class Go1RoughCfg( LeggedRobotCfg ):
 
     class commands( LeggedRobotCfg.commands ):
         curriculum = True
-        max_curriculum = 3.0
+        max_curriculum = 2.0
         num_commands = 4 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
-        resampling_time = 10. # time before command are changed[s]
+        resampling_time = 25. # time before command are changed[s]
         heading_command = True # if true: compute ang vel command from heading error
         use_terrain_aware_commands = True # enable terrain-aware command resampling per paper
         class ranges( LeggedRobotCfg.commands.ranges):
