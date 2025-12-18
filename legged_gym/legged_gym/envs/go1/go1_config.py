@@ -87,11 +87,15 @@ class Go1RoughCfg( LeggedRobotCfg ):
 
     class commands( LeggedRobotCfg.commands ):
         curriculum = True
-        max_curriculum = 2.0
+        max_curriculum = 1.5
+        # more
+        max_forward_curriculum = 1.5  # x_vel 限制 [-1.0, 1.5]
+        max_backward_curriculum = 1.0
+        max_lat_curriculum = 1.0  # y_vel 限制 [-1.0, 1.0]
         num_commands = 4 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
         resampling_time = 25. # time before command are changed[s]
         heading_command = True # if true: compute ang vel command from heading error
-        use_terrain_aware_commands = True # enable terrain-aware command resampling per paper
+        use_terrain_aware_commands = False # enable terrain-aware command resampling per paper
         class ranges( LeggedRobotCfg.commands.ranges):
             lin_vel_x = [-1.0, 1.0] # min max [m/s]
             lin_vel_y = [-1.0, 1.0]   # min max [m/s]
@@ -113,7 +117,7 @@ class Go1RoughCfg( LeggedRobotCfg ):
         randomize_com_displacement = True
         com_displacement_range = [-0.05, 0.05]
 
-        randomize_link_mass = True
+        randomize_link_mass = False
         link_mass_range = [0.9, 1.1]
         
         randomize_friction = True
@@ -154,7 +158,7 @@ class Go1RoughCfg( LeggedRobotCfg ):
             orientation = -0.2
             dof_acc = -2.5e-7
             joint_power = -2e-5
-            base_height = -1.0
+            base_height = -5.0
             foot_clearance = -0.01
             action_rate = -0.01
             smoothness = -0.01
@@ -167,6 +171,10 @@ class Go1RoughCfg( LeggedRobotCfg ):
             dof_pos_limits = -0.0
             dof_vel_limits = -0.0
             torque_limits = -0.0
+            # more
+            hip_pos = -0.12
+            thigh_pose = -0.05
+            calf_pose = -0.03
 
         only_positive_rewards = False # if true negative total rewards are clipped at zero (avoids early termination problems)
         tracking_sigma = 0.25 # tracking reward = exp(-error^2/sigma)

@@ -263,6 +263,8 @@ default_joint_angles = { # = target angles [rad] when action = 0.0
     'FR_calf_joint': -1.5,  # [rad]
     'RR_calf_joint': -1.5,    # [rad]
 }
+
+说明: 2200 后 rew_base_height 震荡
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name pc_mc2
@@ -282,4 +284,112 @@ resampling_time = 25.
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name part_cmds2 --resume  --load_run Dec16_05-52-49_part_cmds1 --checkpoint 500
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec16_09-25-58_part_cmds2 --checkpoint 4700
+```
+
+- 1217
+```txt
+更新为 flat、rough flat 速度课程
+--resume --load_run Dec16_09-07-55_pc_mc2 --checkpoint 2200
+
+default_joint_angles 0 化
+randomize_link_mass = True
+num_rows= 6
+max_curriculum = 2
+resampling_time = 25. 
+
+generator = 'flat_mix' # add flat/rough-flat into terrain mix
+
+NOTE：后期震荡
+```
+
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name flat_cmds --resume  --load_run Dec16_09-07-55_pc_mc2 --checkpoint 2200
+```
+
+- 1217-1
+```txt
+速度课程和 1216 一致
+--resume --load_run Dec16_09-07-55_pc_mc2 --checkpoint 2200
+
+default_joint_angles 0 化
+randomize_link_mass = True
+num_rows= 6
+max_curriculum = 1.5
+resampling_time = 25. 
+
+NOTE: gap 失败
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name pc_mc1d5 --resume  --load_run Dec16_09-07-55_pc_mc2 --checkpoint 2200
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec17_05-36-50_pc_mc1d5 --checkpoint 1500
+```
+
+- 1217-2
+```txt
+相比 1217-1
+
+base_height = -3.0
+
+NOTE: gap 失败
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name pc_mc1d5_h3 --resume  --load_run Dec16_09-07-55_pc_mc2 --checkpoint 2200
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec17_05-57-38_pc_mc1d5_h3 --checkpoint 1300
+```
+
+- 1218
+```txt
+default_joint_angles 回归正常
+
+randomize_link_mass = True
+num_rows= 6
+max_curriculum = 1.5
+resampling_time = 25. 
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name n1d5
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec18_02-11-29_n1d5 --checkpoint 1300
+```
+
+- 1218-1
+```txt
+ --resume  --load_run Dec13_08-20-10_link_mass_rand --checkpoint 2000
+
+use_terrain_aware_commands = True
+randomize_link_mass = True
+num_rows= 6
+max_curriculum = 1.5
+resampling_time = 25. 
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name n1d5_re --resume  --load_run Dec13_08-20-10_link_mass_rand --checkpoint 2000
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec18_05-36-57_n1d5_re --checkpoint 1000
+```
+
+- 1218-2
+```txt
+--resume  --load_run Dec11_03-39-53_ --checkpoint 5000
+
+max_forward_curriculum = 1.5  # x_vel 限制 [-1.0, 1.5]
+max_backward_curriculum = 1.0
+max_lat_curriculum = 1.0  # y_vel 限制 [-1.0, 1.0]
+
+randomize_link_mass = False
+base_height = -5.0
+
+# more
+hip_pos = -0.12
+thigh_pose = -0.05
+calf_pose = -0.03
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name p_limit --resume  --load_run Dec11_03-39-53_ --checkpoint 5000
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec18_10-11-21_p_limit --checkpoint 5300
 ```

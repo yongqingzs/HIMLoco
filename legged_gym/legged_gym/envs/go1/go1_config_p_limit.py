@@ -30,11 +30,6 @@
 
 from legged_gym.envs.base.legged_robot_config import LeggedRobotCfg, LeggedRobotCfgPPO
 
-'''
-增加 randomize_motor_strength 的影响 (之前一直没有实际生效):
-    him1209_2500.pt 表现良好
-'''
-
 class Go1RoughCfg( LeggedRobotCfg ):
     class init_state( LeggedRobotCfg.init_state ):
         pos = [0.0, 0.0, 0.42] # x,y,z [m]
@@ -64,13 +59,43 @@ class Go1RoughCfg( LeggedRobotCfg ):
         action_scale = 0.25
         # decimation: Number of control action updates @ sim DT per policy DT
         decimation = 4
+    
+    class terrain( LeggedRobotCfg.terrain ):
+        mesh_type = 'trimesh' # "heightfield" # none, plane, heightfield or trimesh
+        horizontal_scale = 0.1 # [m]
+        vertical_scale = 0.005 # [m]
+        border_size = 25 # [m]
+        curriculum = True
+        static_friction = 1.0
+        dynamic_friction = 1.0
+        restitution = 0.
+        # rough terrain only:
+        measure_heights = True
+        measured_points_x = [-0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8] # 1mx1.6m rectangle (without center line)
+        measured_points_y = [-0.5, -0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5]
+        selected = False # select a unique terrain type and pass all arguments
+        terrain_kwargs = None # Dict of arguments for selected terrain
+        max_init_terrain_level = 5 # starting curriculum state
+        terrain_length = 8.
+        terrain_width = 8.
+        num_rows= 6 # number of terrain rows (levels)
+        num_cols = 20 # number of terrain cols (types)
+        # terrain types: [smooth slope, rough slope, stairs up, stairs down, discrete]
+        terrain_proportions = [0.1, 0.2, 0.3, 0.3, 0.1]
+        # trimesh only:
+        slope_treshold = 0.75 # slopes above this threshold will be corrected to vertical surfaces
 
     class commands( LeggedRobotCfg.commands ):
         curriculum = True
-        max_curriculum = 2.0
+        max_curriculum = 1.5
+        # more
+        max_forward_curriculum = 1.5  # x_vel 限制 [-1.0, 1.5]
+        max_backward_curriculum = 1.0
+        max_lat_curriculum = 1.0  # y_vel 限制 [-1.0, 1.0]
         num_commands = 4 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
-        resampling_time = 10. # time before command are changed[s]
+        resampling_time = 25. # time before command are changed[s]
         heading_command = True # if true: compute ang vel command from heading error
+        use_terrain_aware_commands = False # enable terrain-aware command resampling per paper
         class ranges( LeggedRobotCfg.commands.ranges):
             lin_vel_x = [-1.0, 1.0] # min max [m/s]
             lin_vel_y = [-1.0, 1.0]   # min max [m/s]
@@ -84,6 +109,44 @@ class Go1RoughCfg( LeggedRobotCfg ):
         penalize_contacts_on = ["thigh", "calf"]
         terminate_after_contacts_on = ["base"]
         self_collisions = 1 # 1 to disable, 0 to enable...bitwise filter
+    
+    class domain_rand( LeggedRobotCfg.domain_rand ):
+        randomize_payload_mass = True
+        payload_mass_range = [-1, 2]
+
+        randomize_com_displacement = True
+        com_displacement_range = [-0.05, 0.05]
+
+        randomize_link_mass = False
+        link_mass_range = [0.9, 1.1]
+        
+        randomize_friction = True
+        friction_range = [0.2, 1.25]
+        
+        randomize_restitution = False
+        restitution_range = [0., 1.0]
+        
+        randomize_motor_strength = True
+        motor_strength_range = [0.9, 1.1]
+        
+        randomize_kp = True
+        kp_range = [0.9, 1.1]
+        
+        randomize_kd = True
+        kd_range = [0.9, 1.1]
+        
+        randomize_initial_joint_pos = True
+        initial_joint_pos_range = [0.5, 1.5]
+        
+        disturbance = True
+        disturbance_range = [-30.0, 30.0]
+        disturbance_interval = 8
+        
+        push_robots = True
+        push_interval_s = 16
+        max_push_vel_xy = 1.
+
+        delay = True
 
     class rewards( LeggedRobotCfg.rewards ):
         class scales:
@@ -95,7 +158,7 @@ class Go1RoughCfg( LeggedRobotCfg ):
             orientation = -0.2
             dof_acc = -2.5e-7
             joint_power = -2e-5
-            base_height = -1.0
+            base_height = -5.0
             foot_clearance = -0.01
             action_rate = -0.01
             smoothness = -0.01
@@ -108,6 +171,10 @@ class Go1RoughCfg( LeggedRobotCfg ):
             dof_pos_limits = -0.0
             dof_vel_limits = -0.0
             torque_limits = -0.0
+            # more
+            hip_pos = -0.12
+            thigh_pose = -0.05
+            calf_pose = -0.03
 
         only_positive_rewards = False # if true negative total rewards are clipped at zero (avoids early termination problems)
         tracking_sigma = 0.25 # tracking reward = exp(-error^2/sigma)
@@ -124,5 +191,6 @@ class Go1RoughCfgPPO( LeggedRobotCfgPPO ):
     class runner( LeggedRobotCfgPPO.runner ):
         run_name = ''
         experiment_name = 'rough_go1'
+        save_interval = 100
 
   

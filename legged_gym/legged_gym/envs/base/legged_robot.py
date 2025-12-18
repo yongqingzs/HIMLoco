@@ -638,21 +638,34 @@ class LeggedRobot(BaseTask):
                                                    torch.clip(self.terrain_levels[env_ids], 0)) # (the minumum level is zero)
         self.env_origins[env_ids] = self.terrain_origins[self.terrain_levels[env_ids], self.terrain_types[env_ids]]
     
+    # def update_command_curriculum(self, env_ids):
+    #     """ Implements a curriculum of increasing commands
+
+    #     Args:
+    #         env_ids (List[int]): ids of environments being reset
+    #     """
+    #     low_vel_env_ids = (env_ids > (self.num_envs * 0.2))
+    #     high_vel_env_ids = (env_ids < (self.num_envs * 0.2))
+    #     low_vel_env_ids = env_ids[low_vel_env_ids.nonzero(as_tuple=True)]
+    #     high_vel_env_ids = env_ids[high_vel_env_ids.nonzero(as_tuple=True)]
+    #     # If the tracking reward is above 80% of the maximum, increase the range of commands
+    #     if (torch.mean(self.episode_sums["tracking_lin_vel"][low_vel_env_ids]) / self.max_episode_length > 0.8 * self.reward_scales["tracking_lin_vel"]) and (torch.mean(self.episode_sums["tracking_lin_vel"][high_vel_env_ids]) / self.max_episode_length > 0.8 * self.reward_scales["tracking_lin_vel"]):
+    #         self.command_ranges["lin_vel_x"][0] = np.clip(self.command_ranges["lin_vel_x"][0] - 0.2, -self.cfg.commands.max_curriculum, 0.)
+    #         self.command_ranges["lin_vel_x"][1] = np.clip(self.command_ranges["lin_vel_x"][1] + 0.2, 0., self.cfg.commands.max_curriculum)
+
     def update_command_curriculum(self, env_ids):
         """ Implements a curriculum of increasing commands
 
         Args:
             env_ids (List[int]): ids of environments being reset
         """
-        low_vel_env_ids = (env_ids > (self.num_envs * 0.2))
-        high_vel_env_ids = (env_ids < (self.num_envs * 0.2))
-        low_vel_env_ids = env_ids[low_vel_env_ids.nonzero(as_tuple=True)]
-        high_vel_env_ids = env_ids[high_vel_env_ids.nonzero(as_tuple=True)]
         # If the tracking reward is above 80% of the maximum, increase the range of commands
-        if (torch.mean(self.episode_sums["tracking_lin_vel"][low_vel_env_ids]) / self.max_episode_length > 0.8 * self.reward_scales["tracking_lin_vel"]) and (torch.mean(self.episode_sums["tracking_lin_vel"][high_vel_env_ids]) / self.max_episode_length > 0.8 * self.reward_scales["tracking_lin_vel"]):
-            self.command_ranges["lin_vel_x"][0] = np.clip(self.command_ranges["lin_vel_x"][0] - 0.2, -self.cfg.commands.max_curriculum, 0.)
-            self.command_ranges["lin_vel_x"][1] = np.clip(self.command_ranges["lin_vel_x"][1] + 0.2, 0., self.cfg.commands.max_curriculum)
-
+        if (torch.mean(self.episode_sums["tracking_lin_vel"][env_ids]) / self.max_episode_length > 0.8 * self.reward_scales["tracking_lin_vel"]):
+            # [-2, 2] ==> [-1.0, 1.5]
+            self.command_ranges["lin_vel_x"][0] = np.clip(self.command_ranges["lin_vel_x"][0] - 0.1, -self.cfg.commands.max_backward_curriculum, 0.)
+            self.command_ranges["lin_vel_x"][1] = np.clip(self.command_ranges["lin_vel_x"][1] + 0.1, 0., self.cfg.commands.max_forward_curriculum)
+            self.command_ranges["lin_vel_y"][0] = np.clip(self.command_ranges["lin_vel_y"][0] - 0.1, -self.cfg.commands.max_lat_curriculum, 0.)
+            self.command_ranges["lin_vel_y"][1] = np.clip(self.command_ranges["lin_vel_y"][1] + 0.1, 0., self.cfg.commands.max_lat_curriculum)
 
     def _get_noise_scale_vec(self, cfg):
         """ Sets a vector used to scale the noise added to the observations.
@@ -1262,6 +1275,27 @@ class LeggedRobot(BaseTask):
     def _reward_torque_limits(self):
         # penalize torques too close to the limit
         return torch.sum((torch.abs(self.torques) - self.torque_limits*self.cfg.rewards.soft_torque_limit).clip(min=0.), dim=1)
+
+    def _reward_hip_pos(self):
+        # 惩罚 hip关节（0,3,6,9）与默认位置的 偏差， (原地不动 或 原地旋转) 时惩罚系数为 5.0，其他为 1.0
+        hip_deviation = torch.sum(torch.abs(self.dof_pos[:, [0, 3, 6, 9]] - self.default_dof_pos[:, [0, 3, 6, 9]]), dim=1)
+        #   XY方向线速度 < 0.1 m/s (不论角速度大小，都会受到惩罚) 时，惩罚力度为 5.0
+        #   XY方向线速度 >= 0.1 m/s 时，惩罚力度为 1.0
+        condition = torch.norm(self.commands[:, :2], dim=1) < 0.1
+        multiplier = 1.0 + condition.float() * 4.0
+        return hip_deviation * multiplier
+
+    def _reward_thigh_pose(self):
+        thigh_deviation = torch.sum(torch.abs(self.dof_pos[:, [1, 4, 7, 10]] - self.default_dof_pos[:, [1, 4, 7, 10]]), dim=1)
+        condition = torch.norm(self.commands[:, :2], dim=1) < 0.1
+        multiplier = 1.0 + condition.float() * 4.0
+        return thigh_deviation * multiplier
+    
+    def _reward_calf_pose(self):
+        calf_deviation = torch.sum(torch.abs(self.dof_pos[:, [2, 5, 8, 11]] - self.default_dof_pos[:, [2, 5, 8, 11]]), dim=1)
+        condition = torch.norm(self.commands[:, :2], dim=1) < 0.1
+        multiplier = 1.0 + condition.float() * 4.0
+        return calf_deviation * multiplier
 
     def _reward_feet_air_time(self):
         # Reward long steps
