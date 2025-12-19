@@ -37,6 +37,7 @@ import os
 from isaacgym.torch_utils import *
 from isaacgym import gymtorch, gymapi, gymutil
 
+import math
 import torch
 from torch import Tensor
 from typing import Tuple, Dict
@@ -63,6 +64,23 @@ class LeggedRobot(BaseTask):
             headless (bool): Run without rendering if True
         """
         self.cfg = cfg
+
+         # 1. 确定 各地形的 起止索引
+        # self.flat_start_idx = 0
+        # self.flat_end_idx = math.ceil(self.cfg.env.num_envs * sum(self.cfg.terrain.terrain_proportions[:1]))
+        # self.rough_start_idx = self.flat_end_idx
+        # self.rough_end_idx = math.ceil(self.cfg.env.num_envs * sum(self.cfg.terrain.terrain_proportions[:2]))
+        self.smoothslope_start_idx = 0
+        self.smoothslope_end_idx = math.ceil(self.cfg.env.num_envs * sum(self.cfg.terrain.terrain_proportions[:1]))
+        self.roughslope_start_idx = self.smoothslope_end_idx
+        self.roughslope_end_idx = math.ceil(self.cfg.env.num_envs * sum(self.cfg.terrain.terrain_proportions[:2]))
+        self.stairsup_start_idx = self.roughslope_end_idx
+        self.stairsup_end_idx = math.ceil(self.cfg.env.num_envs * sum(self.cfg.terrain.terrain_proportions[:3]))
+        self.stairsdown_start_idx = self.stairsup_end_idx
+        self.stairsdown_end_idx = math.ceil(self.cfg.env.num_envs * sum(self.cfg.terrain.terrain_proportions[:4]))
+        self.discreteobstacles_start_idx = self.stairsdown_end_idx
+        self.discreteobstacles_end_idx = math.ceil(self.cfg.env.num_envs * sum(self.cfg.terrain.terrain_proportions[:5]))
+
         self.sim_params = sim_params
         self.height_samples = None
         self.debug_viz = False
@@ -132,6 +150,11 @@ class LeggedRobot(BaseTask):
         self.feet_pos = self.rigid_body_states.view(self.num_envs, self.num_bodies, 13)[:, self.feet_indices, 0:3]
         self.feet_vel = self.rigid_body_states.view(self.num_envs, self.num_bodies, 13)[:, self.feet_indices, 7:10]
 
+        # 四足的 接触力 是否 > 1，来判断是否接触地面
+        contact = self.contact_forces[:, self.feet_indices, 2] > 1.
+        self.contact_filt = torch.logical_or(contact, self.last_contacts)
+        self.last_contacts = contact
+
         self._post_physics_step_callback()
 
         # compute observations, rewards, resets, ...
@@ -157,9 +180,41 @@ class LeggedRobot(BaseTask):
     def check_termination(self):
         """ Check if environments need to be reset
         """
-        self.reset_buf = torch.any(torch.norm(self.contact_forces[:, self.termination_contact_indices, :], dim=-1) > 1., dim=1)
+        termination_counts = {}
+        # (1) 触发终止部位的接触力 > 1N，则需要重置 (num_envs,)
+        contact_force_cond = torch.any(torch.norm(self.contact_forces[:, self.termination_contact_indices, :], dim=-1) > 1., dim=1)
+        self.reset_buf = contact_force_cond
+        termination_counts["contact_force"] = (contact_force_cond.sum().item() / self.num_envs) * 100
+        # print(f'[legged_robot] termination_counts contact_force (%): {termination_counts["contact_force"]}]')
+
+        # (2) episode步数 > 1000
         self.time_out_buf = self.episode_length_buf > self.max_episode_length # no terminal reward for time-outs
         self.reset_buf |= self.time_out_buf
+        termination_counts["time_out"] = (self.time_out_buf.sum().item() / self.num_envs) * 100
+        # print(f'[legged_robot] termination_counts time_out (%): {termination_counts["time_out"]}]')
+
+        # (3) base速度 与 命令速度（因摔倒恢复训练，需关闭这个）
+        if hasattr(self.cfg, "termination") and getattr(self.cfg.termination, "base_vel_violate_commands", False):
+            vel_error = self.base_lin_vel[:, 0] - self.commands[:, 0]
+            self.vel_violate = ((vel_error > 2) & (self.commands[:, 0] < 0.)) | ((vel_error < -2) & (self.commands[:, 0] > 0.))
+            self.vel_violate *= (self.terrain_levels > 3)
+            self.reset_buf |= self.vel_violate
+            termination_counts["vel_violate"] = (self.vel_violate.sum().item() / self.num_envs) * 100
+            # print(f'[legged_robot] termination_counts vel_violate (%): {termination_counts["vel_violate"]}]')
+
+        # (4) env走出地形的边界
+        if hasattr(self.cfg, "termination") and getattr(self.cfg.termination, "out_of_border", False):
+            self.out_border = self.terrain.in_terrain_range(self.root_states[:, :3], device=self.device).logical_not()
+            self.reset_buf |= self.out_border
+            termination_counts["out_border"] = (self.out_border.sum().item() / self.num_envs) * 100
+            # print(f'[legged_robot] termination_counts out_border (%): {termination_counts["out_border"]}]')
+
+        # (5) base的z方向线速度 < -5 （即跌落）# 或 重力投影 为 Z轴向上（因摔倒恢复训练，需关闭这个，避免刚重置就终止了）
+        if hasattr(self.cfg, "termination") and getattr(self.cfg.termination, "fall_down", False):
+            self.fall_down = (self.root_states[:, 9] < -5.)  #  | (self.projected_gravity[:, 2] > 0.)
+            self.reset_buf |= self.fall_down
+            termination_counts["fall_down"] = (self.fall_down.sum().item() / self.num_envs) * 100
+            # print(f'[legged_robot] termination_counts fall_down (%): {termination_counts["fall_down"]}]')
 
     def reset_idx(self, env_ids):
         """ Reset some environments.
@@ -1198,7 +1253,13 @@ class LeggedRobot(BaseTask):
         # Tracking of angular velocity commands (yaw) 
         ang_vel_error = torch.square(self.commands[:, 2] - self.base_ang_vel[:, 2])
         return torch.exp(-ang_vel_error/self.cfg.rewards.tracking_sigma)
-    
+
+    def _reward_has_contact(self):
+        # 奖励 (base 原地不动) 时的 四足触地个数
+        contact_filt = 1. * self.contact_filt
+        condition = (torch.norm(self.commands[:, :2], dim=1) < 0.1) & (torch.abs(self.commands[:, 2]) < 0.05)
+        return condition.float() * torch.sum(contact_filt, dim=-1) / 4
+
     def _reward_lin_vel_z(self):
         # Penalize z axis base linear velocity
         return torch.square(self.base_lin_vel[:, 2])
@@ -1237,6 +1298,43 @@ class LeggedRobot(BaseTask):
         foot_leteral_vel = torch.sqrt(torch.sum(torch.square(footvel_in_body_frame[:, :, :2]), dim=2)).view(self.num_envs, -1)
         return torch.sum(height_error * foot_leteral_vel, dim=1)
     
+    # --- 四足离地高度 ---
+    def _reward_feet_clearance_base(self):
+        # 惩罚 大速度下 四足抬脚距base的高度 偏离目标距离 （-0.2 m）（摔倒时不计算）
+        # 当前四足相对base的 位置 和 线速度（世界坐标系）
+        cur_footpos_translated = self.feet_pos - self.root_states[:, 0:3].unsqueeze(1)
+        cur_footvel_translated = self.feet_vel - self.root_states[:, 7:10].unsqueeze(1)
+        # 当前四足相对base的 位置 和 线速度（body坐标系）
+        footpos_in_body_frame = torch.zeros(self.num_envs, len(self.feet_indices), 3, device=self.device)  # (num_envs, 4, 3)
+        footvel_in_body_frame = torch.zeros(self.num_envs, len(self.feet_indices), 3, device=self.device)
+        for i in range(len(self.feet_indices)):
+            footpos_in_body_frame[:, i, :] = quat_rotate_inverse(self.base_quat, cur_footpos_translated[:, i, :])
+            footvel_in_body_frame[:, i, :] = quat_rotate_inverse(self.base_quat, cur_footvel_translated[:, i, :])
+
+        # 四足相对base的高度 距 目标高度 的误差（平方误差）
+        height_error = torch.square(footpos_in_body_frame[:, :, 2] - self.cfg.rewards.feet_height_target_base).view(self.num_envs, -1)
+        # 四足相对base的 线速度 的模
+        feet_leteral_vel = torch.sqrt(torch.sum(torch.square(footvel_in_body_frame[:, :, :2]), dim=2)).view(self.num_envs, -1)
+        return torch.sum(height_error * feet_leteral_vel, dim=1)
+
+    def _reward_feet_clearance_terrain(self):
+        # 惩罚 大速度下（同时考虑线速度和角速度） 四足的抬脚高度 需接近 离地目标高度（0.15m）
+        feet_heights = self._get_feet_heights()
+
+        feet_lateral_vel = torch.norm(self.feet_vel[:, :, :2], dim=-1)
+        # return torch.sum(foot_lateral_vel * torch.maximum(-feet_heights + self.cfg.rewards.feet_height_target_terrain, torch.zeros_like(foot_heights)), dim = -1)
+        return torch.sum(feet_lateral_vel * torch.square(feet_heights - self.cfg.rewards.feet_height_target_terrain), dim=-1)
+
+    def _reward_feet_yaw_clearance_terrain(self):
+        # 奖励 (base原地旋转) 时 脚抬起
+        condition = (torch.abs(self.commands[:, 2]) > 0.05) & (torch.norm(self.commands[:, :2], dim=1) < 0.1)
+
+        feet_heights = self._get_feet_heights()
+        mean_foot_height = torch.mean(feet_heights, dim=1)
+
+        height_reward = torch.tanh(mean_foot_height + 0.15)
+        return condition.float() * height_reward
+
     def _reward_action_rate(self):
         # Penalize changes in actions
         return torch.sum(torch.square(self.last_actions - self.actions), dim=1)
@@ -1257,10 +1355,30 @@ class LeggedRobot(BaseTask):
         # Penalize collisions on selected bodies
         return torch.sum(1.*(torch.norm(self.contact_forces[:, self.penalised_contact_indices, :], dim=-1) > 0.1), dim=1)
     
+    # def _reward_termination(self):
+    #     # Terminal reward / penalty
+    #     return self.reset_buf * ~self.time_out_buf
+    
     def _reward_termination(self):
         # Terminal reward / penalty
-        return self.reset_buf * ~self.time_out_buf
-    
+        rewards = self.reset_buf * ~self.time_out_buf
+        if hasattr(self.cfg, "termination") and getattr(self.cfg.termination, "out_of_border", False):
+            rewards * ~self.out_border
+        if hasattr(self.cfg, "termination") and getattr(self.cfg.termination, "fall_down", False):
+            rewards * ~self.fall_down
+        return rewards
+
+    # --- feet contact ---
+    def _reward_feet_contact_forces(self):
+        # 惩罚 四足接触力过大（需<100）
+        return torch.sum((torch.norm(self.contact_forces[:, self.feet_indices, :], dim=-1) -  self.cfg.rewards.max_contact_force).clip(min=0.), dim=1)
+
+    def _reward_feet_mirror(self):
+        # 惩罚 斜对称腿的关节位置偏差
+        diff1 = torch.sum(torch.square(self.dof_pos[:, [1, 2]] - self.dof_pos[:, [10, 11]]),dim=-1)
+        diff2 = torch.sum(torch.square(self.dof_pos[:, [4, 5]] - self.dof_pos[:, [7, 8]]),dim=-1)
+        return 0.5 * (diff1 + diff2)
+
     def _reward_dof_pos_limits(self):
         # Penalize dof positions too close to the limit
         out_of_limits = -(self.dof_pos - self.dof_pos_limits[:, 0]).clip(max=0.) # lower limit
@@ -1297,19 +1415,58 @@ class LeggedRobot(BaseTask):
         multiplier = 1.0 + condition.float() * 4.0
         return calf_deviation * multiplier
 
+    # def _reward_feet_air_time(self):
+    #     # Reward long steps
+    #     # Need to filter the contacts because the contact reporting of PhysX is unreliable on meshes
+    #     contact = self.contact_forces[:, self.feet_indices, 2] > 1.
+    #     contact_filt = torch.logical_or(contact, self.last_contacts) 
+    #     self.last_contacts = contact
+    #     first_contact = (self.feet_air_time > 0.) * contact_filt
+    #     self.feet_air_time += self.dt
+    #     rew_airTime = torch.sum((self.feet_air_time - 0.5) * first_contact, dim=1) # reward only on first contact with the ground
+    #     rew_airTime *= torch.norm(self.commands[:, :2], dim=1) > 0.1 #no reward for zero command
+    #     self.feet_air_time *= ~contact_filt
+    #     return rew_airTime
+
     def _reward_feet_air_time(self):
-        # Reward long steps
-        # Need to filter the contacts because the contact reporting of PhysX is unreliable on meshes
-        contact = self.contact_forces[:, self.feet_indices, 2] > 1.
-        contact_filt = torch.logical_or(contact, self.last_contacts) 
+        # 奖励 四足的空中时间接近0.5s (原地不动时除外)
+        # 需过滤接触力信号，因为PhysX引擎在复杂地形上接触力检测不可靠
+        contact = self.contact_forces[:, self.feet_indices, 2] > 1.  # 检测z轴力 > 1N 的接触
+        contact_filt = torch.logical_or(contact, self.last_contacts)  # 当前帧和上一帧的 有1次触地即可
         self.last_contacts = contact
-        first_contact = (self.feet_air_time > 0.) * contact_filt
-        self.feet_air_time += self.dt
-        rew_airTime = torch.sum((self.feet_air_time - 0.5) * first_contact, dim=1) # reward only on first contact with the ground
-        rew_airTime *= torch.norm(self.commands[:, :2], dim=1) > 0.1 #no reward for zero command
-        self.feet_air_time *= ~contact_filt
+        first_contact = (self.feet_air_time > 0.) * contact_filt  # 只考虑从空中首次触地的情况
+        self.feet_air_time += self.dt  # 累加 policy 步长（0.02s）
+        rew_airTime = torch.sum((self.feet_air_time - 0.5) * first_contact, dim=1)  # 仅奖励第一次触地，且计算与目标时间0.5s的偏差奖励
+        condition = (torch.norm(self.commands[:, :2], dim=1) > 0.1) | (
+                    torch.abs(self.commands[:, 2]) > 0.05)  # commands XY方向线速度 > 0.1m/s 或 yaw方向角速度 > 0.05rad/s 时才奖励
+        rew_airTime *= condition.float()
+        self.feet_air_time *= ~contact_filt  # 当前帧 触地的足 空中时间清0
         return rew_airTime
+
+    def _reward_feet_stumble(self):
+        # 惩罚 四足接触到垂直表面 (只在上楼梯，discrete_obstacle, pit地形)
+        # 判定条件： XY方向 足部接触力 与 Z轴接触力 之比 > 5
+        rew = torch.any(torch.norm(self.contact_forces[:, self.feet_indices, :2], dim=2) > \
+             4 * torch.abs(self.contact_forces[:, self.feet_indices, 2]), dim=1)
+        rew = rew * (self.terrain_levels > 3)
+        rew = rew.float()
+        stumble_reward = torch.zeros_like(rew)
+        stumble_reward[self.stairsup_start_idx: self.stairsup_end_idx] = rew[self.stairsup_start_idx: self.stairsup_end_idx]
+        stumble_reward[self.discreteobstacles_start_idx: self.discreteobstacles_end_idx] = rew[self.discreteobstacles_start_idx: self.discreteobstacles_end_idx]
+        # stumble_reward[self.pit_start_idx: self.gap_end_idx] = rew[self.pit_start_idx: self.gap_end_idx]
+        return stumble_reward
     
+    def _reward_feet_slide(self):
+        # 惩罚 触地时 四足相对base的速度（避免滑动）
+        cur_footvel_translated = self.feet_vel - self.root_states[:, 7:10].unsqueeze(1)  # 当前四足相对base的 线速度（世界坐标系）
+        # 当前四足相对base的 线速度（body坐标系）
+        footvel_in_body_frame = torch.zeros(self.num_envs, len(self.feet_indices), 3, device=self.device)
+        for i in range(len(self.feet_indices)):
+            footvel_in_body_frame[:, i, :] = quat_rotate_inverse(self.base_quat, cur_footvel_translated[:, i, :])
+        # 四足相对base的 线速度 的模
+        foot_leteral_vel = torch.sqrt(torch.sum(torch.square(footvel_in_body_frame[:, :, :2]), dim=2)).view(self.num_envs, -1)
+        return torch.sum(self.contact_filt * foot_leteral_vel, dim=1)
+
     def _reward_stumble(self):
         # Penalize feet hitting vertical surfaces
         return torch.any(torch.norm(self.contact_forces[:, self.feet_indices, :2], dim=2) >\
@@ -1322,3 +1479,16 @@ class LeggedRobot(BaseTask):
     def _reward_feet_contact_forces(self):
         # penalize high contact forces
         return torch.sum((torch.norm(self.contact_forces[:, self.feet_indices, :], dim=-1) -  self.cfg.rewards.max_contact_force).clip(min=0.), dim=1)
+
+    def _reward_stuck(self):
+        # 惩罚 卡住
+        # 判断是否卡住：
+        #   base 的 (XY方向线速度 < 0.1 m/s 且 yaw方向角速度 < 0.1 rad/s)
+        small_lin_vel = torch.norm(self.base_lin_vel[:, :2], dim=1) < 0.1
+        small_ang_vel = torch.abs(self.base_ang_vel[:, 2]) < 0.1
+        stuck = small_lin_vel & small_ang_vel
+        #   但 commands 的 线速度 > 0.1 m/s 或 角速度 > 0.1 rad/s
+        large_lin_commands = torch.norm(self.commands[:, :2], dim=1) > 0.1
+        large_ang_commands = torch.abs(self.commands[:, 2]) > 0.1
+        large_commands = large_lin_commands | large_ang_commands
+        return stuck * large_commands

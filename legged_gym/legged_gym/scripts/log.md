@@ -393,3 +393,14 @@ python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --t
 
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec18_10-11-21_p_limit --checkpoint 5300
 ```
+
+- 1218-3
+```txt
+--resume  --load_run Dec11_03-39-53_ --checkpoint 5000
+奖励设置太复杂，基本参考 aliengo_stairs_config
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name a_stairs --resume  --load_run Dec11_03-39-53_ --checkpoint 5000
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec18_15-24-59_a_stairs --checkpoint 5200
+```
