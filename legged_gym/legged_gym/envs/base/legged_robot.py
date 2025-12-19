@@ -1368,11 +1368,6 @@ class LeggedRobot(BaseTask):
             rewards * ~self.fall_down
         return rewards
 
-    # --- feet contact ---
-    def _reward_feet_contact_forces(self):
-        # 惩罚 四足接触力过大（需<100）
-        return torch.sum((torch.norm(self.contact_forces[:, self.feet_indices, :], dim=-1) -  self.cfg.rewards.max_contact_force).clip(min=0.), dim=1)
-
     def _reward_feet_mirror(self):
         # 惩罚 斜对称腿的关节位置偏差
         diff1 = torch.sum(torch.square(self.dof_pos[:, [1, 2]] - self.dof_pos[:, [10, 11]]),dim=-1)

@@ -387,6 +387,8 @@ base_height = -5.0
 hip_pos = -0.12
 thigh_pose = -0.05
 calf_pose = -0.03
+
+NOTE： 抗扰能力下降
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name p_limit --resume  --load_run Dec11_03-39-53_ --checkpoint 5000
@@ -398,9 +400,95 @@ python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --ta
 ```txt
 --resume  --load_run Dec11_03-39-53_ --checkpoint 5000
 奖励设置太复杂，基本参考 aliengo_stairs_config
+
+NOTE: sim2real 有前倾趋势
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name a_stairs --resume  --load_run Dec11_03-39-53_ --checkpoint 5000
 
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec18_15-24-59_a_stairs --checkpoint 5200
+```
+
+- 1219
+```txt
+--resume  --load_run Dec11_03-39-53_ --checkpoint 5000
+class scales:
+    termination = -0.0
+    tracking_lin_vel = 1.0
+    tracking_ang_vel = 0.5
+    lin_vel_z = -2.0
+    ang_vel_xy = -0.05
+    orientation = -0.2
+    dof_acc = -2.5e-7
+    joint_power = -2e-5
+    base_height = -5.0
+    foot_clearance = -0.01
+    action_rate = -0.01
+    smoothness = -0.01
+    feet_air_time =  0.1
+    collision = -0.0
+    feet_stumble = -0.0
+    stand_still = -0.
+    torques = -0.0
+    dof_vel = -0.0
+    dof_pos_limits = -0.01
+    dof_vel_limits = -0.01
+    torque_limits = -1e-3
+    # more
+    hip_pos = -0.08
+    thigh_pose = -0.03
+    calf_pose = -0.01
+    feet_contact_forces = -0.00015
+
+only_positive_rewards = False # if true negative total rewards are clipped at zero (avoids early termination problems)
+tracking_sigma = 0.20 # tracking reward = exp(-error^2/sigma)
+soft_dof_pos_limit = 1. # percentage of urdf limits, values above this limit are penalized
+soft_dof_vel_limit = 1.
+soft_torque_limit = 1.
+base_height_target = 0.30
+max_contact_force = 100. # forces above this value are penalized
+clearance_height_target = -0.20
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name p_limit1 --resume  --load_run Dec11_03-39-53_ --checkpoint 5000
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec19_01-54-34_p_limit1 --checkpoint 5300
+```
+
+- 1209-1
+```txt
+like 1209, but:
+    resume  him1214_lmr_2000.pt
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name p_limit2 --resume  --load_run Dec13_08-20-10_link_mass_rand --checkpoint 2000
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec19_03-48-03_p_limit2 --checkpoint 500
+```
+
+- 1209-2
+```txt
+like 1209, but:
+    resume  him1214_lmr_2000.pt
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name p_limit2 --resume  --load_run Dec13_08-20-10_link_mass_rand --checkpoint 2000
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec19_03-48-03_p_limit2 --checkpoint 500
+```
+
+- 1209-2
+```txt
+like 1209, but:
+    no resume
+num_rows= 10
+feet_air_time =  0.0
+base_height = -2.0
+
+hip_pos = -0.04
+thigh_pose = -0.02
+calf_pose = -0.005
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name p_limit3
 ```
