@@ -78,7 +78,7 @@ class Go1RoughCfg( LeggedRobotCfg ):
         max_init_terrain_level = 5 # starting curriculum state
         terrain_length = 8.
         terrain_width = 8.
-        num_rows= 6 # number of terrain rows (levels)
+        num_rows= 10 # number of terrain rows (levels)
         num_cols = 20 # number of terrain cols (types)
         # terrain types: [smooth slope, rough slope, stairs up, stairs down, discrete]
         terrain_proportions = [0.1, 0.2, 0.3, 0.3, 0.1]
@@ -212,11 +212,11 @@ class Go1RoughCfg( LeggedRobotCfg ):
             orientation = -0.2
             dof_acc = -2.5e-7
             joint_power = -2e-5
-            base_height = -5.0
+            base_height = -1.5
             foot_clearance = -0.01
             action_rate = -0.01
             smoothness = -0.01
-            feet_air_time =  0.1
+            feet_air_time =  0.0
             collision = -0.0
             feet_stumble = -0.0
             stand_still = -0.
@@ -226,9 +226,9 @@ class Go1RoughCfg( LeggedRobotCfg ):
             dof_vel_limits = -0.01
             torque_limits = -1e-3
             # more
-            hip_pos = -0.08
-            thigh_pose = -0.03
-            calf_pose = -0.01
+            hip_pos = -0.03
+            # thigh_pose = -0.02
+            # calf_pose = -0.005
             feet_contact_forces = -0.00015
 
         only_positive_rewards = False # if true negative total rewards are clipped at zero (avoids early termination problems)

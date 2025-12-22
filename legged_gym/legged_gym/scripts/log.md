@@ -455,9 +455,9 @@ python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --t
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec19_01-54-34_p_limit1 --checkpoint 5300
 ```
 
-- 1209-1
+- 1219-1
 ```txt
-like 1209, but:
+like 1219, but:
     resume  him1214_lmr_2000.pt
 ```
 ```bash
@@ -466,9 +466,9 @@ python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --t
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec19_03-48-03_p_limit2 --checkpoint 500
 ```
 
-- 1209-2
+- 1219-2
 ```txt
-like 1209, but:
+like 1219, but:
     resume  him1214_lmr_2000.pt
 ```
 ```bash
@@ -477,9 +477,9 @@ python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --t
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec19_03-48-03_p_limit2 --checkpoint 500
 ```
 
-- 1209-2
+- 1219-2
 ```txt
-like 1209, but:
+like 1219, but:
     no resume
 num_rows= 10
 feet_air_time =  0.0
@@ -488,7 +488,111 @@ base_height = -2.0
 hip_pos = -0.04
 thigh_pose = -0.02
 calf_pose = -0.005
+
+NOTE: 往后撅屁股
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name p_limit3
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec19_10-07-11_p_limit3
+```
+
+- 1219-3
+```txt
+like 1219-2, but:
+    base_height = -1.5
+    hip_pos = -0.03
+    # thigh_pose = -0.02
+    # calf_pose = -0.005
+
+NOTE: 稳定性欠佳
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name p_limit4
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec19_15-01-06_p_limit4
+```
+
+- 1220
+```txt
+like 1219-3, but:
+    randomize_link_mass = True
+    link_mass_range = [0.9, 1.1]
+
+NOTE: 脚有内缩趋势
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name p_limit5
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec20_03-10-11_p_limit5
+```
+
+- 1221
+```txt
+like 1220, but:
+    randomize_kp = True
+    kp_range = [0.8, 1.2]
+    
+    randomize_kd = True
+    kd_range = [0.8, 1.2]
+
+NOTE: 压低姿态
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name p_limit6
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec21_01-54-19_p_limit6
+```
+
+- 1221-1
+```txt
+like 1220, but:
+    stiffness = {'joint': 30.}
+    damping = {'joint': 0.75}
+
+NOTE: 姿态奇怪
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name p_limit7
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec21_02-01-17_p_limit7
+```
+
+- 1222
+```txt
+like 1219-3, but:
+    randomize_kp = True
+    kp_range = [0.8, 1.2]
+    
+    randomize_kd = True
+    kd_range = [0.8, 1.2]
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name p_limit8
+```
+
+- 1222-1
+```txt
+like 1219-3, but:
+    randomize_kp = True
+    kp_range = [0.8, 1.2]
+    
+    randomize_kd = True
+    kd_range = [0.8, 1.2]
+
+    randomize_motor_strength = False 
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name p_limit9
+```
+
+- 1222-2
+```txt
+--resume  --load_run Dec19_15-01-06_p_limit4 --checkpoint 5000
+like 1219-3, but:
+    payload_mass_range = [-1, 3]
+    friction_range = [0.2, 2.75]
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name p_limit10 --resume  --load_run Dec19_15-01-06_p_limit4 --checkpoint 5000
 ```
