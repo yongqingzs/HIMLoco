@@ -124,7 +124,7 @@ class Go1RoughCfg( LeggedRobotCfg ):
         randomize_com_displacement = True
         com_displacement_range = [-0.05, 0.05]
 
-        randomize_link_mass = False
+        randomize_link_mass = True
         link_mass_range = [0.9, 1.1]
         
         randomize_friction = True
@@ -156,53 +156,7 @@ class Go1RoughCfg( LeggedRobotCfg ):
         delay = True
 
     class rewards( LeggedRobotCfg.rewards ):
-        """
-        class scales:
-            termination = -100.0
-            tracking_lin_vel = 2.0
-            tracking_ang_vel = 2.0
-            lin_vel_z = -2.0
-            ang_vel_xy = -0.05
-            orientation = -0.2
-            dof_acc = -2.5e-7
-            joint_power = -3e-5
-            feet_mirror = -0.05
-            base_height = -5.0
-            # foot_clearance = -0.01
-            feet_clearance_base = -0.0
-            feet_clearance_terrain = -0.0
-            feet_yaw_clearance_terrain = 1.0  # (base原地旋转) 时 脚抬起
-            action_rate = -0.05
-            smoothness = -0.02
-            feet_air_time =  0.25
-            has_contact = 2.0
-            collision = -5.0
-            feet_contact_forces = -0.00015
-            feet_stumble = -2.0
-            feet_slide = -0.01
-            stand_still = -0.1
-            torques = -0.0001
-            dof_vel = -0.0
-            dof_pos_limits = -0.0
-            dof_vel_limits = -0.0
-            torque_limits = -0.0
-            # more
-            hip_pos = -0.12
-            thigh_pose = -0.05
-            calf_pose = -0.03
-            stuck = -1.
-
-        only_positive_rewards = False # if true negative total rewards are clipped at zero (avoids early termination problems)
-        tracking_sigma = 0.20 # tracking reward = exp(-error^2/sigma)
-        soft_dof_pos_limit = 0.95 # percentage of urdf limits, values above this limit are penalized
-        soft_dof_vel_limit = 0.95
-        soft_torque_limit = 0.95
-        base_height_target = 0.30
-        feet_height_target_base = -0.20
-        feet_height_target_terrain = 0.10
-        max_contact_force = 100. # forces above this value are penalized
-        clearance_height_target = -0.20
-        """
+        "reward 0"
         class scales:
             termination = -0.0
             tracking_lin_vel = 1.0
@@ -212,7 +166,8 @@ class Go1RoughCfg( LeggedRobotCfg ):
             orientation = -0.2
             dof_acc = -2.5e-7
             joint_power = -2e-5
-            base_height = -1.5
+            base_height = -3
+            # only one
             foot_clearance = -0.01
             action_rate = -0.01
             smoothness = -0.01
@@ -230,6 +185,7 @@ class Go1RoughCfg( LeggedRobotCfg ):
             # thigh_pose = -0.02
             # calf_pose = -0.005
             feet_contact_forces = -0.00015
+            trot = 0.0
 
         only_positive_rewards = False # if true negative total rewards are clipped at zero (avoids early termination problems)
         tracking_sigma = 0.20 # tracking reward = exp(-error^2/sigma)
@@ -238,7 +194,8 @@ class Go1RoughCfg( LeggedRobotCfg ):
         soft_torque_limit = 1.
         base_height_target = 0.30
         max_contact_force = 100. # forces above this value are penalized
-        clearance_height_target = -0.20
+        clearance_height_target = -0.22
+        cycle_time=0.5  # for trot
 
 class Go1RoughCfgPPO( LeggedRobotCfgPPO ):
     class algorithm( LeggedRobotCfgPPO.algorithm ):

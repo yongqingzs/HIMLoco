@@ -1487,3 +1487,35 @@ class LeggedRobot(BaseTask):
         large_ang_commands = torch.abs(self.commands[:, 2]) > 0.1
         large_commands = large_lin_commands | large_ang_commands
         return stuck * large_commands
+
+    # ========== Gait rewards ===========
+    def _get_phase(self):
+        cycle_time = self.cfg.rewards.cycle_time
+        phase = (self.episode_length_buf * self.dt)%cycle_time/cycle_time
+        return phase
+
+    def _get_gait_phase(self):
+        # return float mask 1 is stance, 0 is swing
+        phase = self._get_phase()
+        stance_mask = torch.zeros((self.num_envs, 2), device=self.device)
+        stance_mask[:, 0] = phase<0.5
+        stance_mask[:, 1] = phase>0.5
+        return stance_mask
+
+    def _reward_trot(self):
+        """
+        Calculates a reward based on the number of feet contacts aligning with the gait phase. 
+        Rewards or penalizes depending on whether the foot contact matches the expected gait phase.
+        """
+        contact = self.contact_forces[:, self.feet_indices, 2] > 5.
+
+        stance_mask = self._get_gait_phase()
+        TROT = (contact[:,0] == contact[:,3]) & \
+            (contact[:,1] == contact[:,2]) & \
+            (contact[:,0] == stance_mask[:,0]) & \
+            (contact[:,1] == stance_mask[:,1])
+        # print( JUMP.to(torch.float32).mean())
+        # print(self.feet_indices)['FL_foot', 'FR_foot', 'RL_foot', 'RR_foot'] tensor([ 6, 12, 20, 26], device='cuda:0')
+        self.trot=TROT.to(torch.float32).mean()*(torch.norm(self.commands[:, :3], dim=1) > 0.1)+(torch.sum((torch.norm(self.contact_forces[:, self.feet_indices, :], dim=-1) > 0.1),dim=1)==4)*(torch.norm(self.commands[:, :3], dim=1) < 0.1)
+        # print(stance_mask[0,0],stance_mask[0,1],phase)
+        return TROT*(torch.norm(self.commands[:, :3], dim=1) > 0.1)
