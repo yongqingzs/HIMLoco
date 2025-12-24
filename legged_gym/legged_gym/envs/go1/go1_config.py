@@ -97,9 +97,12 @@ class Go1RoughCfg( LeggedRobotCfg ):
         heading_command = True # if true: compute ang vel command from heading error
         use_terrain_aware_commands = False # enable terrain-aware command resampling per paper
         class ranges( LeggedRobotCfg.commands.ranges):
-            lin_vel_x = [-1.0, 1.0] # min max [m/s]
-            lin_vel_y = [-1.0, 1.0]   # min max [m/s]
-            ang_vel_yaw = [-3.14, 3.14]    # min max [rad/s]
+            # lin_vel_x = [-1.0, 1.0] # min max [m/s]
+            # lin_vel_y = [-1.0, 1.0]   # min max [m/s]
+            # ang_vel_yaw = [-3.14, 3.14]    # min max [rad/s]
+            lin_vel_x = [-0.5, 0.5]  # min max [m/s]
+            lin_vel_y = [-0.5, 0.5]  # min max [m/s]
+            ang_vel_yaw = [-1, 1]  # min max [rad/s]
             heading = [-3.14, 3.14]
 
     class asset( LeggedRobotCfg.asset ):
@@ -124,7 +127,7 @@ class Go1RoughCfg( LeggedRobotCfg ):
         randomize_com_displacement = True
         com_displacement_range = [-0.05, 0.05]
 
-        randomize_link_mass = True
+        randomize_link_mass = False
         link_mass_range = [0.9, 1.1]
         
         randomize_friction = True
@@ -155,7 +158,7 @@ class Go1RoughCfg( LeggedRobotCfg ):
 
         delay = True
 
-    class rewards( LeggedRobotCfg.rewards ):
+    class rewards0( LeggedRobotCfg.rewards ):
         "reward 0"
         class scales:
             termination = -0.0
@@ -196,6 +199,35 @@ class Go1RoughCfg( LeggedRobotCfg ):
         max_contact_force = 100. # forces above this value are penalized
         clearance_height_target = -0.22
         cycle_time=0.5  # for trot
+
+    class rewards( LeggedRobotCfg.rewards ):
+        """
+        rewards 1
+        reward from np3o
+        """
+        soft_dof_pos_limit = 0.9 
+        # soft_dof_vel_limit = 0.9
+        # soft_torque_limit = 0.9
+        base_height_target = 0.32
+        clearance_height_target = -0.22
+
+        only_positive_rewards = True
+        class scales( LeggedRobotCfg.rewards.scales ):
+            foot_clearance_up = -0.5
+            foot_mirror_up = -0.05
+            foot_slide_up = -0.05
+            collision_up = -1
+            base_height_up = -10.0
+            stumble_up = -0.05
+            upward = 0.5
+            has_contact = 0.5
+            tracking_lin_vel = 2.0
+            tracking_ang_vel = 1.0
+            stand_nice = -0.1
+            lin_vel_z_up = -4.0
+            ang_vel_xy_up = -0.1
+            orientation_up=-0.2
+            feet_contact_forces_up = -0.00015
 
 class Go1RoughCfgPPO( LeggedRobotCfgPPO ):
     class algorithm( LeggedRobotCfgPPO.algorithm ):

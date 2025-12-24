@@ -745,7 +745,22 @@ like 1220, but:
     trot = 0.1
     cycle_time=0.5
 no resume
+
+NOTE: 还是出现肘击地面的情况
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name phase1
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec23_13-40-18_phase1
+```
+
+- 1224
+```txt
+rewards from np3o
+ NOTE: 2000后发散
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name np3o
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec23_17-04-04_np3o --checkpoint 2000
 ```
