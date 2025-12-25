@@ -747,6 +747,7 @@ like 1220, but:
 no resume
 
 NOTE: 还是出现肘击地面的情况
+      0.1 的 trot 似乎并没有什么效果
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name phase1
@@ -763,4 +764,130 @@ rewards from np3o
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name np3o
 
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec23_17-04-04_np3o --checkpoint 2000
+```
+
+- 1224-1
+```txt
+like 1220, but:
+    base_height = -3
+    foot_mirror_up = -0.03
+    foot_slide_up = -0.03
+
+--resume  --load_run Dec23_13-40-18_phase1 --checkpoint 3600
+
+NOTE: 上升太慢
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior --resume  --load_run Dec23_13-40-18_phase1 --checkpoint 3600
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec24_01-53-40_mrrior --checkpoint 300
+```
+
+- 1224-2
+```txt
+like 1220, but:
+    base_height = -3
+    foot_mirror_up = -0.03
+    foot_slide_up = -0.03
+
+no resume
+NOTE：需要重新调整
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior1
+```
+
+
+- 1224-3
+```txt
+like 1220, but:
+    base_height = -5
+    foot_mirror_up = -0.05
+
+--resume   --load_run Dec23_07-15-16_p_limit5d1 --checkpoint 6000
+
+NOTE: gap
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior --resume   --load_run Dec23_07-15-16_p_limit5d1 --checkpoint 6000
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec24_03-32-34_mrrior --checkpoint 6000
+```
+
+- 1224-4
+```txt
+like 1220, but:
+    base_height = -5
+    foot_mirror_up = -0.05
+
+lin_vel_x = [-0.5, 0.5]  # min max [m/s]
+lin_vel_y = [-0.5, 0.5]  # min max [m/s]
+ang_vel_yaw = [-1, 1]  # min max [rad/s]
+heading = [-3.14, 3.14]
+no resume
+
+NOTE: gap
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior1
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec24_03-35-48_mrrior1
+```
+
+- 1224-5
+```txt
+like 1220, but:
+    soft_dof_pos_limit = 0.9
+    # hip_pos = -0.03
+    foot_mirror_up = -0.05
+    base_height = -3
+no resume
+
+NOTE: gap
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior2
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec24_07-32-36_mrrior2
+```
+
+- 1225
+```txt
+resume and like 1224-4, but
+    randomize_motor_strength = True
+    motor_strength_range = [0.8, 1.2]
+    
+    randomize_kp = True
+    kp_range = [0.8, 1.2]
+    
+    randomize_kd = True
+    kd_range = [0.8, 1.2]
+
+--resume   --load_run Dec24_03-35-48_mrrior1 --checkpoint 5000
+NOTE: 内缩
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior1d1 --resume   --load_run Dec24_03-35-48_mrrior1 --checkpoint 5000
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec25_01-28-01_mrrior1d1
+```
+
+- 1225-1
+```txt
+like 1224-4, but
+    randomize_motor_strength = True
+    motor_strength_range = [0.8, 1.2]
+    
+    randomize_kp = True
+    kp_range = [0.8, 1.2]
+    
+    randomize_kd = True
+    kd_range = [0.8, 1.2]
+
+no resume
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior3
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec25_01-28-26_mrrior3
 ```

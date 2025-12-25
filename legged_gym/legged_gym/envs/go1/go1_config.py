@@ -137,13 +137,13 @@ class Go1RoughCfg( LeggedRobotCfg ):
         restitution_range = [0., 1.0]
         
         randomize_motor_strength = True
-        motor_strength_range = [0.9, 1.1]
+        motor_strength_range = [0.8, 1.2]
         
         randomize_kp = True
-        kp_range = [0.9, 1.1]
+        kp_range = [0.8, 1.2]
         
         randomize_kd = True
-        kd_range = [0.9, 1.1]
+        kd_range = [0.8, 1.2]
         
         randomize_initial_joint_pos = True
         initial_joint_pos_range = [0.5, 1.5]
@@ -158,7 +158,7 @@ class Go1RoughCfg( LeggedRobotCfg ):
 
         delay = True
 
-    class rewards0( LeggedRobotCfg.rewards ):
+    class rewards( LeggedRobotCfg.rewards ):
         "reward 0"
         class scales:
             termination = -0.0
@@ -169,7 +169,7 @@ class Go1RoughCfg( LeggedRobotCfg ):
             orientation = -0.2
             dof_acc = -2.5e-7
             joint_power = -2e-5
-            base_height = -3
+            base_height = -5
             # only one
             foot_clearance = -0.01
             action_rate = -0.01
@@ -184,23 +184,25 @@ class Go1RoughCfg( LeggedRobotCfg ):
             dof_vel_limits = -0.01
             torque_limits = -1e-3
             # more
-            hip_pos = -0.03
+            # hip_pos = -0.03
             # thigh_pose = -0.02
             # calf_pose = -0.005
             feet_contact_forces = -0.00015
             trot = 0.0
+            foot_mirror_up = -0.05
+            # foot_slide_up = -0.03
 
         only_positive_rewards = False # if true negative total rewards are clipped at zero (avoids early termination problems)
         tracking_sigma = 0.20 # tracking reward = exp(-error^2/sigma)
-        soft_dof_pos_limit = 1. # percentage of urdf limits, values above this limit are penalized
+        soft_dof_pos_limit = 0.9 # percentage of urdf limits, values above this limit are penalized
         soft_dof_vel_limit = 1.
         soft_torque_limit = 1.
         base_height_target = 0.30
         max_contact_force = 100. # forces above this value are penalized
-        clearance_height_target = -0.22
+        clearance_height_target = -0.2
         cycle_time=0.5  # for trot
 
-    class rewards( LeggedRobotCfg.rewards ):
+    class rewards1( LeggedRobotCfg.rewards ):
         """
         rewards 1
         reward from np3o

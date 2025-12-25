@@ -1410,33 +1410,33 @@ class LeggedRobot(BaseTask):
         multiplier = 1.0 + condition.float() * 4.0
         return calf_deviation * multiplier
 
-    # def _reward_feet_air_time(self):
-    #     # Reward long steps
-    #     # Need to filter the contacts because the contact reporting of PhysX is unreliable on meshes
-    #     contact = self.contact_forces[:, self.feet_indices, 2] > 1.
-    #     contact_filt = torch.logical_or(contact, self.last_contacts) 
-    #     self.last_contacts = contact
-    #     first_contact = (self.feet_air_time > 0.) * contact_filt
-    #     self.feet_air_time += self.dt
-    #     rew_airTime = torch.sum((self.feet_air_time - 0.5) * first_contact, dim=1) # reward only on first contact with the ground
-    #     rew_airTime *= torch.norm(self.commands[:, :2], dim=1) > 0.1 #no reward for zero command
-    #     self.feet_air_time *= ~contact_filt
-    #     return rew_airTime
-
     def _reward_feet_air_time(self):
-        # 奖励 四足的空中时间接近0.5s (原地不动时除外)
-        # 需过滤接触力信号，因为PhysX引擎在复杂地形上接触力检测不可靠
-        contact = self.contact_forces[:, self.feet_indices, 2] > 1.  # 检测z轴力 > 1N 的接触
-        contact_filt = torch.logical_or(contact, self.last_contacts)  # 当前帧和上一帧的 有1次触地即可
+        # Reward long steps
+        # Need to filter the contacts because the contact reporting of PhysX is unreliable on meshes
+        contact = self.contact_forces[:, self.feet_indices, 2] > 1.
+        contact_filt = torch.logical_or(contact, self.last_contacts) 
         self.last_contacts = contact
-        first_contact = (self.feet_air_time > 0.) * contact_filt  # 只考虑从空中首次触地的情况
-        self.feet_air_time += self.dt  # 累加 policy 步长（0.02s）
-        rew_airTime = torch.sum((self.feet_air_time - 0.5) * first_contact, dim=1)  # 仅奖励第一次触地，且计算与目标时间0.5s的偏差奖励
-        condition = (torch.norm(self.commands[:, :2], dim=1) > 0.1) | (
-                    torch.abs(self.commands[:, 2]) > 0.05)  # commands XY方向线速度 > 0.1m/s 或 yaw方向角速度 > 0.05rad/s 时才奖励
-        rew_airTime *= condition.float()
-        self.feet_air_time *= ~contact_filt  # 当前帧 触地的足 空中时间清0
+        first_contact = (self.feet_air_time > 0.) * contact_filt
+        self.feet_air_time += self.dt
+        rew_airTime = torch.sum((self.feet_air_time - 0.5) * first_contact, dim=1) # reward only on first contact with the ground
+        rew_airTime *= torch.norm(self.commands[:, :2], dim=1) > 0.1 #no reward for zero command
+        self.feet_air_time *= ~contact_filt
         return rew_airTime
+
+    # def _reward_feet_air_time(self):
+    #     # 奖励 四足的空中时间接近0.5s (原地不动时除外)
+    #     # 需过滤接触力信号，因为PhysX引擎在复杂地形上接触力检测不可靠
+    #     contact = self.contact_forces[:, self.feet_indices, 2] > 1.  # 检测z轴力 > 1N 的接触
+    #     contact_filt = torch.logical_or(contact, self.last_contacts)  # 当前帧和上一帧的 有1次触地即可
+    #     self.last_contacts = contact
+    #     first_contact = (self.feet_air_time > 0.) * contact_filt  # 只考虑从空中首次触地的情况
+    #     self.feet_air_time += self.dt  # 累加 policy 步长（0.02s）
+    #     rew_airTime = torch.sum((self.feet_air_time - 0.5) * first_contact, dim=1)  # 仅奖励第一次触地，且计算与目标时间0.5s的偏差奖励
+    #     condition = (torch.norm(self.commands[:, :2], dim=1) > 0.1) | (
+    #                 torch.abs(self.commands[:, 2]) > 0.05)  # commands XY方向线速度 > 0.1m/s 或 yaw方向角速度 > 0.05rad/s 时才奖励
+    #     rew_airTime *= condition.float()
+    #     self.feet_air_time *= ~contact_filt  # 当前帧 触地的足 空中时间清0
+    #     return rew_airTime
 
     def _reward_feet_stumble(self):
         # 惩罚 四足接触到垂直表面 (只在上楼梯，discrete_obstacle, pit地形)
