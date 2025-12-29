@@ -873,8 +873,23 @@ python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --ta
 ```
 
 - 1225-1
-```txt
-like 1224-4, but
+```python
+class domain_rand( LeggedRobotCfg.domain_rand ):
+    randomize_payload_mass = True
+    payload_mass_range = [-1, 2]
+
+    randomize_com_displacement = True
+    com_displacement_range = [-0.05, 0.05]
+
+    randomize_link_mass = False
+    link_mass_range = [0.9, 1.1]
+    
+    randomize_friction = True
+    friction_range = [0.2, 1.25]
+    
+    randomize_restitution = False
+    restitution_range = [0., 1.0]
+    
     randomize_motor_strength = True
     motor_strength_range = [0.8, 1.2]
     
@@ -883,11 +898,245 @@ like 1224-4, but
     
     randomize_kd = True
     kd_range = [0.8, 1.2]
+    
+    randomize_initial_joint_pos = True
+    initial_joint_pos_range = [0.5, 1.5]
+    
+    disturbance = True
+    disturbance_range = [-30.0, 30.0]
+    disturbance_interval = 8
+    
+    push_robots = True
+    push_interval_s = 16
+    max_push_vel_xy = 1.
+
+    delay = True
+
+class rewards( LeggedRobotCfg.rewards ):
+    "reward 0"
+    class scales:
+        termination = -0.0
+        tracking_lin_vel = 1.0
+        tracking_ang_vel = 0.5
+        lin_vel_z = -2.0
+        ang_vel_xy = -0.05
+        orientation = -0.2
+        dof_acc = -2.5e-7
+        joint_power = -2e-5
+        base_height = -5
+        # only one
+        foot_clearance = -0.01
+        action_rate = -0.01
+        smoothness = -0.01
+        feet_air_time =  0.0
+        collision = -0.0
+        feet_stumble = -0.0
+        stand_still = -0.
+        torques = -0.0
+        dof_vel = -0.0
+        dof_pos_limits = -0.01
+        dof_vel_limits = -0.01
+        torque_limits = -1e-3
+        # more
+        # hip_pos = -0.03
+        # thigh_pose = -0.02
+        # calf_pose = -0.005
+        feet_contact_forces = -0.00015
+        trot = 0.0
+        foot_mirror_up = -0.05
+        # foot_slide_up = -0.03
+
+    only_positive_rewards = False # if true negative total rewards are clipped at zero (avoids early termination problems)
+    tracking_sigma = 0.20 # tracking reward = exp(-error^2/sigma)
+    soft_dof_pos_limit = 0.9 # percentage of urdf limits, values above this limit are penalized
+    soft_dof_vel_limit = 1.
+    soft_torque_limit = 1.
+    base_height_target = 0.30
+    max_contact_force = 100. # forces above this value are penalized
+    clearance_height_target = -0.22
+    cycle_time=0.5  # for trot
 
 no resume
+
+NOTE: 2600 在 real 时可以维持稳定 1 的速度; 5000 内缩
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior3
 
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec25_01-28-26_mrrior3
+```
+
+- 1225-2
+```txt
+like 1225-1, but:
+    base_height = -10
+    # torques = -0.5
+    clearance_height_target = -0.22
+torques = -0.5 影响太大
+
+NOTE: 3700 内缩
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior4
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec25_15-00-38_mrrior4
+```
+
+- 1226
+```txt
+like 1225-1, add:
+    hip_pos = -0.03
+    base_height = -10
+    clearance_height_target = -0.22
+ --resume   --load_run Dec25_01-28-26_mrrior3 --checkpoint 5000
+
+NOTE: 后面还是肘击地面
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior3d1 --resume   --load_run Dec25_01-28-26_mrrior3 --checkpoint 5000
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec26_01-35-50_mrrior3d1
+```
+
+- 1226-1
+```txt
+like 1225-1, add:
+    hip_pos = -0.03
+    base_height = -10
+    clearance_height_target = -0.22
+
+NOTE: 肘击地面
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior5
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/play.py --headless --task go1 --load_run Dec26_01-43-47_mrrior5
+```
+
+- 1226-2
+```txt
+like 1225-1, add:
+    hip_pos = -0.03
+    base_height = -5
+    foot_clearance = -0.0
+    feet_air_time =  0.01
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior6
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Dec26_06-48-02_mrrior6
+```
+
+- 1226-3
+```txt
+like 1225-1, but:
+    hip_pos = -0.03
+    thigh_pose = -0.005
+    calf_pose = -0.005
+    base_height = -5
+    foot_clearance = -0.0
+    feet_air_time =  0.01
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior7
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Dec26_15-07-04_mrrior7
+```
+
+- 1227
+```txt
+like 1225-1, but:
+    hip_pos = -0.05
+    thigh_pose = -0.01
+    calf_pose = -0.01
+    base_height = -5
+    foot_clearance = -0.0
+    feet_air_time =  0.01
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior8
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Dec27_03-14-29_mrrior8
+```
+
+- 1227-1
+```txt
+like 1225-1, but:
+    hip_pos = -0.05
+    thigh_pose = -0.01
+    calf_pose = -0.01
+    base_height = -5
+    foot_clearance = -0.0
+    feet_air_time =  0.01
+    # foot_mirror_up = -0.05
+    feet_mirror = -0.05
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior9
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Dec27_08-06-48_mrrior9
+```
+
+
+
+- 1228
+```txt
+like 1225-1, but:
+    hip_pos = -0.05
+    thigh_pose = -0.01
+    calf_pose = -0.01
+    base_height = -5
+    foot_clearance = -0.0
+    feet_air_time =  0.01
+    # foot_mirror_up = -0.05
+    feet_mirror = -0.05
+    randomize_link_mass = True
+    link_mass_range = [0.9, 1.1]
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior10
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Dec28_03-36-47_mrrior10
+```
+
+- 1228-1
+```txt
+like 1225-1, but:
+    hip_pos = -0.05
+    thigh_pose = -0.01
+    calf_pose = -0.01
+    base_height = -5
+    foot_clearance = -0.0
+    feet_air_time =  0.01
+    # foot_mirror_up = -0.05
+    feet_mirror = -0.05
+    torques = -0.005
+
+NOTE: failed
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior11
+```
+
+- 1228-2
+```txt
+like 1225-1, but:
+    hip_pos = -0.05
+    thigh_pose = -0.01
+    calf_pose = -0.01
+    base_height = -5
+    foot_clearance = -0.0
+    feet_air_time =  0.01
+    # foot_mirror_up = -0.05
+    feet_mirror = -0.1
+    randomize_link_mass = True
+    link_mass_range = [0.9, 1.1]
+
+    base_height_target = 0.28
+    tracking_sigma = 0.25
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior12
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Dec28_12-25-41_mrrior12
 ```
