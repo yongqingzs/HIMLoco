@@ -1135,7 +1135,9 @@ like 1225-1, but:
     base_height_target = 0.28
     tracking_sigma = 0.25
 
-NOTE: 高速腿向后跌
+NOTE: 
+1. 高速腿向后跌
+2. 节点
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior12
@@ -1217,7 +1219,7 @@ like 1225-1, but:
 
 NOTE：
 1. link_mass_range [0.8, 1.2] com_displacement_range = [-0.1, 0.1] 初始不动
-2. 当前5000开始收敛
+2. 当前5000开始收敛 5000 速度拉高偏离
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior16
@@ -1246,7 +1248,7 @@ like 1225-1, but:
 
 resume Dec29_06-09-13_mrrior12
 
-NOTE: 待实机测试
+NOTE: 速度拉高偏离
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior12d1 --resume   --load_run Dec28_12-25-41_mrrior12 --checkpoint 5000
@@ -1275,6 +1277,8 @@ like 1225-1, but:
 
     dof_pos_limits = -10
     dof_vel_limits = -10
+
+NOTE: 3800未开始收敛
 ```
 ```bash
 CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior17
@@ -1301,4 +1305,28 @@ like 1225-1, but:
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior16d1 --resume   --load_run Dec30_01-35-34_mrrior16 --checkpoint 5000
+```
+
+- 1231-1
+```txt
+like 1225-1, but:
+    hip_pos = -0.05
+    thigh_pose = -0.01
+    calf_pose = -0.01
+    base_height = -5
+    foot_clearance = -0.0
+    feet_air_time =  0.01
+    # foot_mirror_up = -0.05
+    feet_mirror = -0.1
+    randomize_link_mass = True
+    link_mass_range = [0.9, 1.1]
+
+    base_height_target = 0.28
+    tracking_sigma = 0.25
+
+    randomize_restitution = True
+    restitution_range = [0., 1.0]
+```
+```bash
+CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior18
 ```

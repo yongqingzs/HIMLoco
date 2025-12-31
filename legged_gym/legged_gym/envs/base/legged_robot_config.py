@@ -164,7 +164,10 @@ class LeggedRobotCfg(BaseConfig):
         push_interval_s = 16
         max_push_vel_xy = 1.
 
-        delay = True
+        delay = False
+        # Lag timesteps (motor delay simulation using buffer)
+        randomize_lag_timesteps = True
+        lag_timesteps = 6  # Number of timesteps to delay (buffer size - 1)
 
     class rewards:
         class scales:

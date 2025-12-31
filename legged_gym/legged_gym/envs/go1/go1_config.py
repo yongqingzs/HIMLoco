@@ -136,7 +136,7 @@ class Go1RoughCfg( LeggedRobotCfg ):
         payload_mass_range = [-1, 2]
 
         randomize_com_displacement = True
-        com_displacement_range = [-0.1, 0.1]
+        com_displacement_range = [-0.05, 0.05]
 
         randomize_base_mass = False
         base_mass_range = [0.9, 1.1]
@@ -170,7 +170,10 @@ class Go1RoughCfg( LeggedRobotCfg ):
         push_interval_s = 16
         max_push_vel_xy = 1.
 
-        delay = True
+        delay = False
+        # Lag timesteps (motor delay simulation using buffer)
+        randomize_lag_timesteps = True
+        lag_timesteps = 6  # Number of timesteps to delay (buffer size - 1)
 
     class rewards( LeggedRobotCfg.rewards ):
         "reward 0"
