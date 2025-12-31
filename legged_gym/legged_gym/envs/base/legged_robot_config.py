@@ -132,6 +132,9 @@ class LeggedRobotCfg(BaseConfig):
         randomize_com_displacement = True
         com_displacement_range = [-0.05, 0.05]
 
+        randomize_base_mass = False
+        base_mass_range = [0.9, 1.1]
+
         randomize_link_mass = False
         link_mass_range = [0.9, 1.1]
         

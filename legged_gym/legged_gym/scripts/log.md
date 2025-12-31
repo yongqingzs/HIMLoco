@@ -1134,9 +1134,171 @@ like 1225-1, but:
 
     base_height_target = 0.28
     tracking_sigma = 0.25
+
+NOTE: 高速腿向后跌
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior12
 
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Dec28_12-25-41_mrrior12
+```
+
+- 1229
+```txt
+like 1225-1, but:
+    hip_pos = -0.05
+    thigh_pose = -0.01
+    calf_pose = -0.01
+    base_height = -5
+    foot_clearance = -0.0
+    feet_air_time =  0.01
+    # foot_mirror_up = -0.05
+    feet_mirror = -0.1
+    randomize_link_mass = True
+    link_mass_range = [0.8, 1.2]
+
+    base_height_target = 0.28
+    tracking_sigma = 0.25
+
+    com_displacement_range = [-0.1, 0.1]
+
+NOTE: 后期发散
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior13
+```
+
+- 1229-1
+```txt
+like 1225-1, but:
+    hip_pos = -0.05
+    thigh_pose = -0.01
+    calf_pose = -0.01
+    base_height = -5
+    foot_clearance = -0.0
+    feet_air_time =  0.01
+    # foot_mirror_up = -0.05
+    feet_mirror = -0.1
+    randomize_link_mass = True
+    link_mass_range = [0.8, 1.2]
+
+    base_height_target = 0.28
+    tracking_sigma = 0.25
+
+    com_displacement_range = [-0.1, 0.1]
+
+    # new
+    base_mass_range = [0.8, 1.2]
+
+NOTE: 初始发散 
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior15
+```
+
+- 1229-2
+```txt
+like 1225-1, but:
+    hip_pos = -0.05
+    thigh_pose = -0.01
+    calf_pose = -0.01
+    base_height = -5
+    foot_clearance = -0.0
+    feet_air_time =  1
+    # foot_mirror_up = -0.05
+    feet_mirror = -0.1
+    randomize_link_mass = True
+    link_mass_range = [0.9, 1.1]
+
+    base_height_target = 0.28
+    tracking_sigma = 0.25
+
+    com_displacement_range = [-0.1, 0.1]
+
+NOTE：
+1. link_mass_range [0.8, 1.2] com_displacement_range = [-0.1, 0.1] 初始不动
+2. 当前5000开始收敛
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior16
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Dec30_01-35-34_mrrior16
+```
+
+- 1230
+```txt
+like 1225-1, but:
+    hip_pos = -0.05
+    thigh_pose = -0.01
+    calf_pose = -0.01
+    base_height = -5
+    foot_clearance = -0.0
+    feet_air_time =  1
+    # foot_mirror_up = -0.05
+    feet_mirror = -0.1
+    randomize_link_mass = True
+    link_mass_range = [0.9, 1.1]
+
+    base_height_target = 0.28
+    tracking_sigma = 0.25
+
+    com_displacement_range = [-0.1, 0.1]
+
+resume Dec29_06-09-13_mrrior12
+
+NOTE: 待实机测试
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior12d1 --resume   --load_run Dec28_12-25-41_mrrior12 --checkpoint 5000
+
+CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Dec30_01-32-25_mrrior12d1
+```
+
+- 1230-1
+```txt
+like 1225-1, but:
+    hip_pos = -0.05
+    # thigh_pose = -0.01
+    # calf_pose = -0.01
+    base_height = -5
+    foot_clearance = -0.0
+    feet_air_time =  1
+    # foot_mirror_up = -0.05
+    feet_mirror = -0.1
+    randomize_link_mass = True
+    link_mass_range = [0.9, 1.1]
+
+    base_height_target = 0.28
+    tracking_sigma = 0.25
+
+    com_displacement_range = [-0.1, 0.1]
+
+    dof_pos_limits = -10
+    dof_vel_limits = -10
+```
+```bash
+CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior17
+```
+
+- 1231
+```txt
+like 1225-1, but:
+    hip_pos = -0.05
+    thigh_pose = -0.01
+    calf_pose = -0.01
+    base_height = -5
+    foot_clearance = -0.0
+    feet_air_time =  1
+    # foot_mirror_up = -0.05
+    feet_mirror = -0.1
+    randomize_link_mass = True
+    link_mass_range = [0.9, 1.1]
+
+    base_height_target = 0.28
+    tracking_sigma = 0.25
+
+    com_displacement_range = [-0.1, 0.1]
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mrrior16d1 --resume   --load_run Dec30_01-35-34_mrrior16 --checkpoint 5000
 ```

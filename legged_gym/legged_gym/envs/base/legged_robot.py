@@ -478,9 +478,21 @@ class LeggedRobot(BaseTask):
         #         print(f"Mass of body {i}: {p.mass} (before randomization)")
         #     print(f"Total mass {sum} (before randomization)")
         # randomize base mass
+        # base_mass = self.default_rigid_body_mass[0]
+        # if self.cfg.domain_rand.randomize_base_mass:
+        #     rng = self.cfg.domain_rand.base_mass_range
+        #     scale = np.random.uniform(rng[0], rng[1])
+        #     base_mass *= scale
+
+        # # 添加负载质量（如果启用）
+        # if self.cfg.domain_rand.randomize_payload_mass:
+        #     base_mass += self.payload[env_id, 0]
+
+        # props[0].mass = base_mass
+
         if self.cfg.domain_rand.randomize_payload_mass:
             props[0].mass = self.default_rigid_body_mass[0] + self.payload[env_id, 0]
-            
+
         if self.cfg.domain_rand.randomize_com_displacement:
             props[0].com = gymapi.Vec3(self.com_displacement[env_id, 0], self.com_displacement[env_id, 1], self.com_displacement[env_id, 2])
 

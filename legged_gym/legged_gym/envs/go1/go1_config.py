@@ -136,8 +136,11 @@ class Go1RoughCfg( LeggedRobotCfg ):
         payload_mass_range = [-1, 2]
 
         randomize_com_displacement = True
-        com_displacement_range = [-0.05, 0.05]
+        com_displacement_range = [-0.1, 0.1]
 
+        randomize_base_mass = False
+        base_mass_range = [0.9, 1.1]
+        
         randomize_link_mass = True
         link_mass_range = [0.9, 1.1]
         
@@ -185,7 +188,7 @@ class Go1RoughCfg( LeggedRobotCfg ):
             foot_clearance = -0.0
             action_rate = -0.01
             smoothness = -0.01
-            feet_air_time = 0.01
+            feet_air_time = 1
             collision = -0.0
             feet_stumble = -0.0
             stand_still = -0.
