@@ -91,4 +91,16 @@ class rewards( LeggedRobotCfg.rewards ):
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mr_lag
+
+CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Dec31_05-32-00_mr_lag
+```
+
+- 101
+```txt
+only resume Dec31_05-32-00_mr_lag
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mr_lagd1 --resume   --load_run Dec31_05-32-00_mr_lag --checkpoint 5000
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Jan01_02-42-38_mr_lagd1
 ```

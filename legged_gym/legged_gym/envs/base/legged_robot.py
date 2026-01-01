@@ -283,6 +283,13 @@ class LeggedRobot(BaseTask):
 
         for i in range(len(self.lag_buffer)):
             self.lag_buffer[i][env_ids, :] = 0
+        
+        # Reset actuator network history buffers if using actuator_net
+        if self.cfg.control.control_type == "actuator_net":
+            self.joint_pos_err_last_last[env_ids] = 0.
+            self.joint_pos_err_last[env_ids] = 0.
+            self.joint_vel_last_last[env_ids] = 0.
+            self.joint_vel_last[env_ids] = 0.
     
     def compute_reward(self):
         """ Compute rewards
@@ -629,7 +636,16 @@ class LeggedRobot(BaseTask):
             self.joint_pos_target = self.default_dof_pos + actions_scaled
 
         control_type = self.cfg.control.control_type
-        if control_type=="P":
+        if control_type == "actuator_net":
+            self.joint_pos_err = self.dof_pos - self.joint_pos_target + self.motor_offsets
+            self.joint_vel = self.dof_vel
+            torques = self.actuator_network(self.joint_pos_err, self.joint_pos_err_last, self.joint_pos_err_last_last,
+                                            self.joint_vel, self.joint_vel_last, self.joint_vel_last_last)
+            self.joint_pos_err_last_last = torch.clone(self.joint_pos_err_last)
+            self.joint_pos_err_last = torch.clone(self.joint_pos_err)
+            self.joint_vel_last_last = torch.clone(self.joint_vel_last)
+            self.joint_vel_last = torch.clone(self.joint_vel)
+        elif control_type=="P":
             torques = self.p_gains * self.Kp_factors * (self.joint_pos_target - self.dof_pos) - self.d_gains * self.Kd_factors * self.dof_vel
         elif control_type=="V":
             torques = self.p_gains*(actions_scaled - self.dof_vel) - self.d_gains*(self.dof_vel - self.last_dof_vel)/self.sim_params.dt
@@ -847,6 +863,31 @@ class LeggedRobot(BaseTask):
                     print(f"PD gain of joint {name} were not defined, setting them to zero")
         self.default_dof_pos = self.default_dof_pos.unsqueeze(0)
         
+        # Initialize actuator network if needed
+        if self.cfg.control.control_type == "actuator_net":
+            actuator_path = f'{LEGGED_GYM_ROOT_DIR}/resources/actuator_nets/unitree_go1.pt'
+            if not os.path.exists(actuator_path):
+                raise FileNotFoundError(f"Actuator network not found at {actuator_path}")
+            actuator_network = torch.jit.load(actuator_path).to(self.device)
+            
+            def eval_actuator_network(joint_pos, joint_pos_last, joint_pos_last_last, joint_vel, joint_vel_last, joint_vel_last_last):
+                xs = torch.cat((joint_pos.unsqueeze(-1),
+                                joint_pos_last.unsqueeze(-1),
+                                joint_pos_last_last.unsqueeze(-1),
+                                joint_vel.unsqueeze(-1),
+                                joint_vel_last.unsqueeze(-1),
+                                joint_vel_last_last.unsqueeze(-1)), dim=-1)
+                torques = actuator_network(xs.view(self.num_envs * 12, 6))
+                return torques.view(self.num_envs, 12)
+            
+            self.actuator_network = eval_actuator_network
+            
+            # Initialize history buffers for actuator network
+            self.joint_pos_err_last_last = torch.zeros((self.num_envs, 12), device=self.device)
+            self.joint_pos_err_last = torch.zeros((self.num_envs, 12), device=self.device)
+            self.joint_vel_last_last = torch.zeros((self.num_envs, 12), device=self.device)
+            self.joint_vel_last = torch.zeros((self.num_envs, 12), device=self.device)
+            self.motor_offsets = torch.zeros(self.num_envs, self.num_dof, dtype=torch.float, device=self.device, requires_grad=False)
         
         #randomize kp, kd, motor strength
         self.Kp_factors = torch.ones(self.num_envs, 1, dtype=torch.float, device=self.device, requires_grad=False)
