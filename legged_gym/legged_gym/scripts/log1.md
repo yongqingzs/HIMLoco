@@ -88,6 +88,8 @@ class rewards( LeggedRobotCfg.rewards ):
     max_contact_force = 100. # forces above this value are penalized
     clearance_height_target = -0.22
     cycle_time=0.5  # for trot
+
+NOTE: 能保持 ≥ 1 m/s 的速度，且机身较为稳定; 爬楼梯待检验
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mr_lag
@@ -98,9 +100,55 @@ CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/
 - 101
 ```txt
 only resume Dec31_05-32-00_mr_lag
+
+NOTE: 能保持 ≥ 1 m/s 的速度，且机身较为稳定; 爬楼梯待检验
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mr_lagd1 --resume   --load_run Dec31_05-32-00_mr_lag --checkpoint 5000
 
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Jan01_02-42-38_mr_lagd1
+```
+
+- 101-1
+```txt
+like 1231, but:
+    foot_clearance = -0.01
+    feet_air_time = 0
+
+NOTE: 8500 低速时比 feet_air_time 表现更好，但收敛更慢
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 8000 --seed 1 --num_envs 4096 --run_name mr_lag1
+
+CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Jan01_13-42-39_mr_lag1
+
+# more iter
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mr_lag1 --resume   --load_run Jan01_13-42-39_mr_lag1 --checkpoint 8000
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Jan03_06-30-38_mr_lag1
+```
+
+- 102
+```txt
+like 1231, but:
+    thigh_pose = -0.00
+    calf_pose = -0.00
+
+NOTE: 影响不大, 7300 姿态很低
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 8000 --seed 1 --num_envs 4096 --run_name mr_lag2
+
+CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Jan02_02-10-05_mr_lag2
+```
+
+- 104
+```txt
+like 1231, but:
+    motor_strength_range = [0.9, 1.1]
+    kp_range = [0.9, 1.1]
+    kd_range = [0.9, 1.1]
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag3
 ```

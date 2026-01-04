@@ -254,7 +254,7 @@ class Go1RoughCfgPPO( LeggedRobotCfgPPO ):
         entropy_coef = 0.01
     class runner( LeggedRobotCfgPPO.runner ):
         run_name = ''
-        experiment_name = 'rough_go1'
+        experiment_name = 'rough1_go1'
         save_interval = 100
 
   
