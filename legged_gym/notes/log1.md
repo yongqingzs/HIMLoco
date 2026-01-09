@@ -89,7 +89,7 @@ class rewards( LeggedRobotCfg.rewards ):
     clearance_height_target = -0.22
     cycle_time=0.5  # for trot
 
-NOTE: 能保持 ≥ 1 m/s 的速度，且机身较为稳定; 爬楼梯待检验
+NOTE: 能保持 ≥ 1 m/s 的速度，且机身较为稳定; 爬楼梯还行
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mr_lag
@@ -101,12 +101,19 @@ CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/
 ```txt
 only resume Dec31_05-32-00_mr_lag
 
-NOTE: 能保持 ≥ 1 m/s 的速度，且机身较为稳定; 爬楼梯待检验
+NOTE: 
+1. 能保持 ≥ 1 m/s 的速度，且机身较为稳定; 爬楼梯还行
+2. 运动时出现初始几步不动的情况
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mr_lagd1 --resume   --load_run Dec31_05-32-00_mr_lag --checkpoint 5000
 
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Jan01_02-42-38_mr_lagd1
+
+# resume more iter from Jan01_02-42-38_mr_lagd1 10000
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lagd1d1 --resume  --load_run Jan01_02-42-38_mr_lagd1 --checkpoint 10000
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Jan06_10-41-48_mr_lagd1d1  --checkpoint 20000
 ```
 
 - 101-1
@@ -115,17 +122,19 @@ like 1231, but:
     foot_clearance = -0.01
     feet_air_time = 0
 
-NOTE: 8500 低速时比 feet_air_time 表现更好，但收敛更慢
+NOTE: 
+1. 8500 低速时比 feet_air_time 表现更好，但收敛更慢
+2. 13000 低速表现更差，0.2 几乎不动
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 8000 --seed 1 --num_envs 4096 --run_name mr_lag1
 
 CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Jan01_13-42-39_mr_lag1
 
-# more iter
-python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mr_lag1 --resume   --load_run Jan01_13-42-39_mr_lag1 --checkpoint 8000
+# more iter from Jan01_13-42-39_mr_lag1 8000
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 5000 --seed 1 --num_envs 4096 --run_name mr_lag1d1 --resume   --load_run Jan01_13-42-39_mr_lag1 --checkpoint 8000
 
-python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Jan03_06-30-38_mr_lag1
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Jan05_09-53-08_mr_lag1d1
 ```
 
 - 102
@@ -148,7 +157,91 @@ like 1231, but:
     motor_strength_range = [0.9, 1.1]
     kp_range = [0.9, 1.1]
     kd_range = [0.9, 1.1]
+
+NOTE: kp kd 域随机化降低似乎会使鲁棒性下降
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag3
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Jan04_02-54-16_mr_lag3
+```
+
+- 105
+```txt
+like 1231, but:
+    motor_strength_range = [0.9, 1.1]
+    kp_range = [0.9, 1.1]
+    kd_range = [0.9, 1.1]
+    foot_clearance = -0.01
+    feet_air_time = 0
+NOTE: 
+1. 有些反直觉，feet_air_time 会大幅促进当前配置下的收敛
+2. 当前仅能收敛到5.8
+3. 低速时表现很差，呈现迈不动腿的情况，说明迈不动腿不是来自 feet_air_time
+```
+```bash
+CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag5
+
+CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Jan05_10-01-24_mr_lag5
+```
+
+- 106
+```txt
+like 1231, but:
+    control_type = 'actuator_net'
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag6
+```
+
+- 107
+```txt
+like 1231, but:
+    motor_strength_range = [0.9, 1.1]
+    kp_range = [0.9, 1.1]
+    kd_range = [0.9, 1.1]
+    thigh_pose = -0.0
+    calf_pose = -0.0
+
+feat: 机身高度偏低，和 kp = [0.8, 1.2] 类似，但低速时表现更好些(不会像卡壳了一样)
+```
+```bash
+CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag7
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Jan07_01-31-18_mr_lag7
+```
+
+- 109
+```txt
+like 1231, but:
+    motor_strength_range = [0.9, 1.1]
+    kp_range = [0.9, 1.1]
+    kd_range = [0.9, 1.1]
+    # hip_pos = -0.05
+    # thigh_pose = -0.01
+    # calf_pose = -0.01
+    hip_pos0 = -0.05
+    thigh_pose0 = -0.01
+    calf_pose0 = -0.01
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag8
+```
+
+- 109-1
+```txt
+like 1231, but:
+--resume  --load_run Jan04_02-54-16_mr_lag3 --checkpoint 10000
+    motor_strength_range = [0.9, 1.1]
+    kp_range = [0.9, 1.1]
+    kd_range = [0.9, 1.1]
+    # hip_pos = -0.05
+    # thigh_pose = -0.01
+    # calf_pose = -0.01
+    hip_pos0 = -0.05
+    thigh_pose0 = -0.01
+    calf_pose0 = -0.01
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag9 --resume  --load_run Jan04_02-54-16_mr_lag3 --checkpoint 10000
 ```

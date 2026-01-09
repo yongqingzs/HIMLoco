@@ -30,19 +30,19 @@
 
 from legged_gym.envs.base.legged_robot_config import LeggedRobotCfg, LeggedRobotCfgPPO
 
-class Go1RoughCfg( LeggedRobotCfg ):
+class Go1TrotCfg( LeggedRobotCfg ):
     class init_state( LeggedRobotCfg.init_state ):
         pos = [0.0, 0.0, 0.42] # x,y,z [m]
         default_joint_angles = { # = target angles [rad] when action = 0.0
-            'FL_hip_joint': 0.1,   # [rad]
-            'RL_hip_joint': 0.1,   # [rad]
-            'FR_hip_joint': -0.1 ,  # [rad]
-            'RR_hip_joint': -0.1,   # [rad]
+            'FL_hip_joint': 0.0,   # [rad]
+            'RL_hip_joint': 0.0,   # [rad]
+            'FR_hip_joint': 0.0 ,  # [rad]
+            'RR_hip_joint': 0.0,   # [rad]
 
             'FL_thigh_joint': 0.8,     # [rad]
-            'RL_thigh_joint': 1.,   # [rad]
+            'RL_thigh_joint': 0.8,   # [rad]
             'FR_thigh_joint': 0.8,     # [rad]
-            'RR_thigh_joint': 1.,   # [rad]
+            'RR_thigh_joint': 0.8,   # [rad]
 
             'FL_calf_joint': -1.5,   # [rad]
             'RL_calf_joint': -1.5,    # [rad]
@@ -61,7 +61,7 @@ class Go1RoughCfg( LeggedRobotCfg ):
         decimation = 4
     
     class terrain( LeggedRobotCfg.terrain ):
-        mesh_type = 'trimesh' # "heightfield" # none, plane, heightfield or trimesh
+        mesh_type = 'plane' # "heightfield" # none, plane, heightfield or trimesh
         horizontal_scale = 0.1 # [m]
         vertical_scale = 0.005 # [m]
         border_size = 25 # [m]
@@ -87,9 +87,9 @@ class Go1RoughCfg( LeggedRobotCfg ):
 
     class commands( LeggedRobotCfg.commands ):
         curriculum = True
-        max_curriculum = 1.5
+        max_curriculum = 2
         # more
-        max_forward_curriculum = 1.5  # x_vel 限制 [-1.0, 1.5]
+        max_forward_curriculum = 2  # x_vel 限制 [-1.0, 1.5]
         max_backward_curriculum = 1.0
         max_lat_curriculum = 1.0  # y_vel 限制 [-1.0, 1.0]
         num_commands = 4 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
@@ -186,7 +186,7 @@ class Go1RoughCfg( LeggedRobotCfg ):
             orientation = -0.2
             dof_acc = -2.5e-7
             joint_power = -2e-5
-            base_height = -5
+            base_height = -10
             # only one
             foot_clearance = -0.0
             action_rate = -0.01
@@ -223,41 +223,13 @@ class Go1RoughCfg( LeggedRobotCfg ):
         clearance_height_target = -0.22
         cycle_time=0.5  # for trot
 
-    class rewards1( LeggedRobotCfg.rewards ):
-        """
-        rewards 1
-        reward from np3o
-        """
-        soft_dof_pos_limit = 0.9 
-        # soft_dof_vel_limit = 0.9
-        # soft_torque_limit = 0.9
-        base_height_target = 0.32
-        clearance_height_target = -0.22
 
-        only_positive_rewards = True
-        class scales( LeggedRobotCfg.rewards.scales ):
-            foot_clearance_up = -0.5
-            foot_mirror_up = -0.05
-            foot_slide_up = -0.05
-            collision_up = -1
-            base_height_up = -10.0
-            stumble_up = -0.05
-            upward = 0.5
-            has_contact = 0.5
-            tracking_lin_vel = 2.0
-            tracking_ang_vel = 1.0
-            stand_nice = -0.1
-            lin_vel_z_up = -4.0
-            ang_vel_xy_up = -0.1
-            orientation_up=-0.2
-            feet_contact_forces_up = -0.00015
-
-class Go1RoughCfgPPO( LeggedRobotCfgPPO ):
+class Go1TrotCfgPPO( LeggedRobotCfgPPO ):
     class algorithm( LeggedRobotCfgPPO.algorithm ):
         entropy_coef = 0.01
     class runner( LeggedRobotCfgPPO.runner ):
         run_name = ''
-        experiment_name = 'rough1_go1'
+        experiment_name = 'trot_go1'
         save_interval = 100
 
   
