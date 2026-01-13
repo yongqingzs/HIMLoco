@@ -142,8 +142,14 @@ class Terrain:
             terrain_utils.stepping_stones_terrain(terrain, stone_size=stepping_stones_size, stone_distance=stone_distance, max_height=0., platform_size=4.)
         elif choice < self.proportions[6]:
             gap_terrain(terrain, gap_size=gap_size, platform_size=3.)
-        else:
+        elif choice < self.proportions[7]:
             pit_terrain(terrain, depth=pit_depth, platform_size=4.)
+        elif choice < self.proportions[8]:
+            pass
+        elif choice < self.proportions[9]:
+            terrain_utils.random_uniform_terrain(terrain, min_height=-0.05, max_height=0.05,
+                                                 step=0.005, downsampled_scale=0.2)
+            terrain.height_field_raw[0:terrain.length // 2, :] = 0
         
         return terrain
 

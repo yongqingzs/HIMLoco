@@ -65,7 +65,7 @@ class Go1TrotCfg( LeggedRobotCfg ):
         horizontal_scale = 0.1 # [m]
         vertical_scale = 0.005 # [m]
         border_size = 25 # [m]
-        curriculum = True
+        curriculum = False
         static_friction = 1.0
         dynamic_friction = 1.0
         restitution = 0.
@@ -81,15 +81,15 @@ class Go1TrotCfg( LeggedRobotCfg ):
         num_rows= 10 # number of terrain rows (levels)
         num_cols = 20 # number of terrain cols (types)
         # terrain types: [smooth slope, rough slope, stairs up, stairs down, discrete]
-        terrain_proportions = [0.1, 0.2, 0.3, 0.3, 0.1]
+        terrain_proportions = [0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0]  # 10 个元素，最后一个为 1.0
         # trimesh only:
         slope_treshold = 0.75 # slopes above this threshold will be corrected to vertical surfaces
 
     class commands( LeggedRobotCfg.commands ):
         curriculum = True
-        max_curriculum = 2
+        # max_curriculum = 2
         # more
-        max_forward_curriculum = 2  # x_vel 限制 [-1.0, 1.5]
+        max_forward_curriculum = 2.5  # x_vel 限制 [-1.0, 1.5]
         max_backward_curriculum = 1.0
         max_lat_curriculum = 1.0  # y_vel 限制 [-1.0, 1.0]
         num_commands = 4 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
@@ -225,11 +225,46 @@ class Go1TrotCfg( LeggedRobotCfg ):
 
 
 class Go1TrotCfgPPO( LeggedRobotCfgPPO ):
+    seed = 1
+    runner_class_name = 'OnPolicyRunner'
+    class policy:
+        init_noise_std = 1.0
+        actor_hidden_dims = [512, 256, 128]
+        critic_hidden_dims = [512, 256, 128]
+        activation = 'elu' # can be elu, relu, selu, crelu, lrelu, tanh, sigmoid
+        # only for 'ActorCriticRecurrent':
+        # rnn_type = 'lstm'
+        # rnn_hidden_size = 512
+        # rnn_num_layers = 1
+        
     class algorithm( LeggedRobotCfgPPO.algorithm ):
+        # training params
+        value_loss_coef = 1.0
+        use_clipped_value_loss = True
+        clip_param = 0.2
         entropy_coef = 0.01
-    class runner( LeggedRobotCfgPPO.runner ):
-        run_name = ''
-        experiment_name = 'trot_go1'
-        save_interval = 100
+        num_learning_epochs = 5
+        num_mini_batches = 4 # mini batch size = num_envs*nsteps / nminibatches
+        learning_rate = 1.e-3 #5.e-4
+        schedule = 'adaptive' # could be adaptive, fixed
+        gamma = 0.99
+        lam = 0.95
+        desired_kl = 0.01
+        max_grad_norm = 1.
 
+    class runner( LeggedRobotCfgPPO.runner ):
+        policy_class_name = 'ActorCritic'
+        algorithm_class_name = 'PPO'
+        num_steps_per_env = 100 # per iteration
+        max_iterations = 200000 # number of policy updates
+
+        # logging
+        save_interval = 100 # check for potential saves every this many iterations
+        experiment_name = 'trot_go1'
+        run_name = ''
+        # load and resume
+        resume = False
+        load_run = -1 # -1 = last run
+        checkpoint = -1 # -1 = last saved model
+        resume_path = None # updated from load_run and chkpt
   

@@ -113,7 +113,7 @@ python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --head
 # resume more iter from Jan01_02-42-38_mr_lagd1 10000
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lagd1d1 --resume  --load_run Jan01_02-42-38_mr_lagd1 --checkpoint 10000
 
-python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Jan06_10-41-48_mr_lagd1d1  --checkpoint 20000
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Jan06_10-41-48_mr_lagd1d1  --checkpoint 19200
 ```
 
 - 101-1
@@ -223,9 +223,21 @@ like 1231, but:
     hip_pos0 = -0.05
     thigh_pose0 = -0.01
     calf_pose0 = -0.01
+
+NOTE： 
+1. 新的 hip_pos0 等可以有效降低低速时僵硬
+2. 10000 时出现一次震荡，从 9000 开始 resume(怀疑是 terrain level 继续上升导致)
+3. resume 后继续训练到 19000，表现稳定，高度相比 1231 提高
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag8
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Jan09_01-34-04_mr_lag8 --checkpoint 9000
+
+# more iter from Jan09_01-34-04_mr_lag8 9000
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag8d1 --resume   --load_run Jan09_01-34-04_mr_lag8 --checkpoint 9000
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Jan10_14-04-30_mr_lag8d1 --checkpoint 10000
 ```
 
 - 109-1
@@ -241,7 +253,46 @@ like 1231, but:
     hip_pos0 = -0.05
     thigh_pose0 = -0.01
     calf_pose0 = -0.01
+
+NOTE: 发散
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag9 --resume  --load_run Jan04_02-54-16_mr_lag3 --checkpoint 10000
+```
+
+- 112
+```txt
+like 1231, but:
+    motor_strength_range = [0.9, 1.1]
+    kp_range = [0.9, 1.1]
+    kd_range = [0.9, 1.1]
+    hip_pos0 = -0.05
+    thigh_pose0 = -0.01
+    calf_pose0 = -0.01
+    com_displacement_range = [-0.1, 0.1]
+    friction_range = [0.2, 1.25]
+
+NOTE：
+1. 只能上升到 5.7
+2. 9700 后发散
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag10
+```
+
+- 113
+```txt
+like 1231, but:
+    motor_strength_range = [0.9, 1.1]
+    kp_range = [0.9, 1.1]
+    kd_range = [0.9, 1.1]
+    hip_pos0 = -0.05
+    thigh_pose0 = -0.01
+    calf_pose0 = -0.01
+    com_displacement_range = [-0.1, 0.1]
+    friction_range = [0.2, 1.25]
+    lag_timesteps = 4
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag11
 ```
