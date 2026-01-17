@@ -192,11 +192,11 @@ class Go1RoughCfg( LeggedRobotCfg ):
             action_rate = -0.01
             smoothness = -0.01
             feet_air_time = 1
-            collision = -0.0
+            collision = -0.02
             feet_stumble = -0.0
             stand_still = -0.
             torques = -0.0
-            dof_vel = -0.0
+            dof_vel = -2e-5
             dof_pos_limits = -0.01
             dof_vel_limits = -0.01
             torque_limits = -1e-3

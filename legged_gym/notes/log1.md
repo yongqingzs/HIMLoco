@@ -189,6 +189,7 @@ CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/
 ```txt
 like 1231, but:
     control_type = 'actuator_net'
+NOTE：terrain level 上升到 5.7
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag6
@@ -203,7 +204,7 @@ like 1231, but:
     thigh_pose = -0.0
     calf_pose = -0.0
 
-feat: 机身高度偏低，和 kp = [0.8, 1.2] 类似，但低速时表现更好些(不会像卡壳了一样)
+NOTE: 机身高度偏低，和 kp = [0.8, 1.2] 类似，但低速时表现更好些(不会像卡壳了一样)
 ```
 ```bash
 CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag7
@@ -228,6 +229,24 @@ NOTE：
 1. 新的 hip_pos0 等可以有效降低低速时僵硬
 2. 10000 时出现一次震荡，从 9000 开始 resume(怀疑是 terrain level 继续上升导致)
 3. resume 后继续训练到 19000，表现稳定，高度相比 1231 提高
+
+mr_lag8d1c1 resume mr_lag8d1 10000, but:
+    resampling_time = 10
+    payload_mass_range = [-1, 3]
+    com_displacement_range = [-0.1, 0.1]
+
+NOTE:
+1. mr_lag8d1c1 500 前 terrain 开始打转，停止训练
+
+mr_lag8d1c2 resume mr_lag8d1 10000, but:
+    resampling_time = 10
+    payload_mass_range = [-1, 3]
+
+NOTE: 在 5.8 附近震荡
+
+mr_lag8d1c3 resume mr_lag8d1 10000, but:
+    collision = -0.02
+    dof_vel = -2e-5
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag8
@@ -238,6 +257,17 @@ python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --head
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag8d1 --resume   --load_run Jan09_01-34-04_mr_lag8 --checkpoint 9000
 
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Jan10_14-04-30_mr_lag8d1 --checkpoint 10000
+
+# more iter from Jan10_14-04-30_mr_lag8d1 10000
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag8d1c1 --resume  --load_run Jan10_14-04-30_mr_lag8d1 --checkpoint 10000
+
+# more iter from Jan10_14-04-30_mr_lag8d1 10000
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag8d1c2 --resume  --load_run Jan10_14-04-30_mr_lag8d1 --checkpoint 10000
+
+# more iter from Jan10_14-04-30_mr_lag8d1 10000
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag8d1c3 --resume  --load_run Jan10_14-04-30_mr_lag8d1 --checkpoint 10000
+
+CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Jan14_15-40-08_mr_lag8d1c3 --checkpoint 13600
 ```
 
 - 109-1
@@ -270,7 +300,7 @@ like 1231, but:
     thigh_pose0 = -0.01
     calf_pose0 = -0.01
     com_displacement_range = [-0.1, 0.1]
-    friction_range = [0.2, 1.25]
+    payload_mass_range = [-1, 3]
 
 NOTE：
 1. 只能上升到 5.7
@@ -290,9 +320,56 @@ like 1231, but:
     thigh_pose0 = -0.01
     calf_pose0 = -0.01
     com_displacement_range = [-0.1, 0.1]
-    friction_range = [0.2, 1.25]
+    payload_mass_range = [-1, 3]
     lag_timesteps = 4
+
+NOTE: 
+1. 4300 上升到 5.8
+2. 该模型 1.5 -> 0 m/s 表现比 8d1 更好
+3. 但前脚有往里缩的现象，估计是延迟不够
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag11
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_policy.py --headless --task go1 --load_run Jan13_14-07-25_mr_lag11 --checkpoint 4300
+```
+
+- 114
+```txt
+like 1231, but:
+    motor_strength_range = [0.9, 1.1]
+    kp_range = [0.9, 1.1]
+    kd_range = [0.9, 1.1]
+    hip_pos0 = -0.05
+    thigh_pose0 = -0.01
+    calf_pose0 = -0.01
+    com_displacement_range = [-0.1, 0.1]
+    lag_timesteps = 6
+
+NOTE: 收敛难度大幅度提高，2000 在 4.8 打转
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag12
+```
+
+- 114-1
+```txt
+like 1231, but:
+    motor_strength_range = [0.9, 1.1]
+    kp_range = [0.9, 1.1]
+    kd_range = [0.9, 1.1]
+    hip_pos0 = -0.05
+    thigh_pose0 = -0.01
+    calf_pose0 = -0.01
+    collision = -0.02
+    dof_vel = -2e-5
+
+NOTE: mr_lag13 10000 相比 mr_lag8d1 急停改善，其余待测试
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag13
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_alone.py --checkpoint /workspace/HIMLoco/legged_gym/logs/rough1_go1/Jan14_15-45-58_mr_lag13/model_10000.pt
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag13d1 --resume  --load_run Jan14_15-45-58_mr_lag13 --checkpoint 10000
 ```

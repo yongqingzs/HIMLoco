@@ -63,3 +63,4 @@ tmp/
 docs/
 play_debug.py
 train_debug.py
+policy.pt
