@@ -364,7 +364,7 @@ like 1231, but:
     collision = -0.02
     dof_vel = -2e-5
 
-NOTE: mr_lag13 10000 相比 mr_lag8d1 急停改善，其余待测试
+NOTE: mr_lag13 10000 相比 mr_lag8d1 急停改善，爬楼梯、越障等尚可
 ```
 ```bash
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag13
@@ -372,4 +372,85 @@ python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --t
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_alone.py --checkpoint /workspace/HIMLoco/legged_gym/logs/rough1_go1/Jan14_15-45-58_mr_lag13/model_10000.pt
 
 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 10000 --seed 1 --num_envs 4096 --run_name mr_lag13d1 --resume  --load_run Jan14_15-45-58_mr_lag13 --checkpoint 10000
+
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/export_alone.py --checkpoint /workspace/HIMLoco/legged_gym/logs/rough1_go1/Jan16_15-12-36_mr_lag13d1/model_20000.pt
+```
+
+- 0121
+```txt
+like 1231, but:
+    motor_strength_range = [0.8, 1.2]
+    kp_range = [0.9, 1.1]
+    kd_range = [0.9, 1.1]
+    hip_pos0 = -0.08
+    thigh_pose0 = -0.02
+    calf_pose0 = -0.02
+    collision = -0.02
+    dof_vel = -2e-5
+    base_height = -10
+
+NOTE: 相比 mr_lag13，没有明显提升
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 20000 --seed 1 --num_envs 4096 --run_name mr_lag15
+```
+
+- 0121
+```txt
+like 1231, but:
+    motor_strength_range = [0.8, 1.2]
+    kp_range = [0.9, 1.1]
+    kd_range = [0.9, 1.1]
+    hip_pos0 = -0.08
+    thigh_pose0 = -0.02
+    calf_pose0 = -0.02
+    collision = -0.02
+    dof_vel = -2e-5
+    base_height = -5
+
+NOTE: 相比 mr_lag13，没有明显提升
+```
+```bash
+CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 20000 --seed 1 --num_envs 4096 --run_name mr_lag16
+```
+
+- 124
+```txt
+like 1231, but:
+    motor_strength_range = [0.9, 1.1]
+    kp_range = [0.9, 1.1]
+    kd_range = [0.9, 1.1]
+    hip_pos0 = -0.05
+    thigh_pose0 = -0.01
+    calf_pose0 = -0.01
+    collision = -0.02
+    dof_vel = -2e-5
+    stiffness = {'joint': 28.}
+    damping = {'joint': 0.7}
+
+NOTE: 相比 mr_lag13，没有明显提升; 综合表现由于 124-1
+```
+```bash
+python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 20000 --seed 1 --num_envs 4096 --run_name mr_lag17
+```
+
+- 124-1
+```txt
+like 1231, but:
+    motor_strength_range = [0.9, 1.1]
+    kp_range = [0.9, 1.1]
+    kd_range = [0.9, 1.1]
+    hip_pos0 = -0.05
+    thigh_pose0 = -0.01
+    calf_pose0 = -0.01
+    collision = -0.02
+    dof_vel = -3e-5
+    base_height = -7
+    stiffness = {'joint': 28.}
+    damping = {'joint': 0.7}
+
+NOTE: 相比 mr_lag13，没有明显提升
+```
+```bash
+CUDA_VISIBLE_DEVICES=1 python3 /workspace/HIMLoco/legged_gym/legged_gym/scripts/train.py --headless --task go1 --max_iterations 20000 --seed 1 --num_envs 4096 --run_name mr_lag18
 ```
