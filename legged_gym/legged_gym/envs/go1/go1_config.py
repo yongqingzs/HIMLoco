@@ -95,7 +95,15 @@ class Go1RoughCfg( LeggedRobotCfg ):
         num_commands = 4 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
         resampling_time = 25. # time before command are changed[s]
         heading_command = True # if true: compute ang vel command from heading error
-        use_terrain_aware_commands = False # enable terrain-aware command resampling per paper
+        use_terrain_max_command_ranges = False # limit command ranges per terrain type
+        # terrain types for go1: [smooth_slope(0), rough_slope(1), stairs_up(2), stairs_down(3), discrete_obstacles(4)]
+        terrain_max_command_ranges = [
+            {'lin_vel_x': [-1.5, 1.5], 'lin_vel_y': [-1.0, 1.0], 'ang_vel_yaw': [-1.0, 1.0], 'heading': [-3.14, 3.14]},  # 0: smooth slope
+            {'lin_vel_x': [-1.5, 1.5], 'lin_vel_y': [-1.0, 1.0], 'ang_vel_yaw': [-1.0, 1.0], 'heading': [-3.14, 3.14]},  # 1: rough slope
+            {'lin_vel_x': [-1.0, 1.0], 'lin_vel_y': [-1.0, 1.0], 'ang_vel_yaw': [-1.0, 1.0], 'heading': [-3.14, 3.14]},  # 2: stairs up
+            {'lin_vel_x': [-1.0, 1.0], 'lin_vel_y': [-1.0, 1.0], 'ang_vel_yaw': [-1.0, 1.0], 'heading': [-3.14, 3.14]},  # 3: stairs down
+            {'lin_vel_x': [-1.0, 1.0], 'lin_vel_y': [-1.0, 1.0], 'ang_vel_yaw': [-1.0, 1.0], 'heading': [-3.14, 3.14]},  # 4: discrete obstacles
+        ]
         class ranges( LeggedRobotCfg.commands.ranges):
             # lin_vel_x = [-1.0, 1.0] # min max [m/s]
             # lin_vel_y = [-1.0, 1.0]   # min max [m/s]

@@ -246,11 +246,7 @@ class LeggedRobot(BaseTask):
         self._reset_dofs(env_ids)
         self._reset_root_states(env_ids)
 
-        # self._resample_commands(env_ids)
-        if self.cfg.commands.use_terrain_aware_commands:
-            self._resample_part_commands(env_ids)
-        else:
-            self._resample_commands(env_ids)
+        self._resample_commands(env_ids)
 
         # reset buffers
         self.last_actions[env_ids] = 0.
@@ -525,12 +521,9 @@ class LeggedRobot(BaseTask):
         """ Callback called before computing terminations, rewards, and observations
             Default behaviour: Compute ang vel command based on target and heading, compute measured terrain heights and randomly push robots
         """
-        # 
         env_ids = (self.episode_length_buf % int(self.cfg.commands.resampling_time / self.dt)==0).nonzero(as_tuple=False).flatten()
-        if self.cfg.commands.use_terrain_aware_commands:
-            self._resample_part_commands(env_ids)
-        else:
-            self._resample_commands(env_ids)
+        self._resample_commands(env_ids)
+
         if self.cfg.commands.heading_command:
             forward = quat_apply(self.base_quat, self.forward_vec)
             heading = torch.atan2(forward[:, 1], forward[:, 0])
@@ -549,76 +542,71 @@ class LeggedRobot(BaseTask):
         Args:
             env_ids (List[int]): Environments ids for which new commands are needed
         """
-        self.commands[env_ids, 0] = torch_rand_float(-1.0, 1.0, (len(env_ids), 1), device=self.device).squeeze(1)
-        self.commands[env_ids, 1] = torch_rand_float(self.command_ranges["lin_vel_y"][0], self.command_ranges["lin_vel_y"][1], (len(env_ids), 1), device=self.device).squeeze(1)
-        if self.cfg.commands.heading_command:
-            self.commands[env_ids, 3] = torch_rand_float(self.command_ranges["heading"][0], self.command_ranges["heading"][1], (len(env_ids), 1), device=self.device).squeeze(1)
+        if getattr(self.cfg.commands, 'use_terrain_max_command_ranges', False) and hasattr(self, 'env_command_ranges'):
+            # sample per-env from terrain-type-specific ranges
+            lo_x = self.env_command_ranges['lin_vel_x'][env_ids, 0]
+            hi_x = self.env_command_ranges['lin_vel_x'][env_ids, 1]
+            lo_y = self.env_command_ranges['lin_vel_y'][env_ids, 0]
+            hi_y = self.env_command_ranges['lin_vel_y'][env_ids, 1]
+            self.commands[env_ids, 0] = (hi_x - lo_x) * torch.rand(len(env_ids), device=self.device) + lo_x
+            self.commands[env_ids, 1] = (hi_y - lo_y) * torch.rand(len(env_ids), device=self.device) + lo_y
+            if self.cfg.commands.heading_command:
+                lo_h = self.env_command_ranges['heading'][env_ids, 0]
+                hi_h = self.env_command_ranges['heading'][env_ids, 1]
+                self.commands[env_ids, 3] = (hi_h - lo_h) * torch.rand(len(env_ids), device=self.device) + lo_h
+            else:
+                lo_a = self.env_command_ranges['ang_vel_yaw'][env_ids, 0]
+                hi_a = self.env_command_ranges['ang_vel_yaw'][env_ids, 1]
+                self.commands[env_ids, 2] = (hi_a - lo_a) * torch.rand(len(env_ids), device=self.device) + lo_a
         else:
-            self.commands[env_ids, 2] = torch_rand_float(self.command_ranges["ang_vel_yaw"][0], self.command_ranges["ang_vel_yaw"][1], (len(env_ids), 1), device=self.device).squeeze(1)
+            self.commands[env_ids, 0] = torch_rand_float(-1.0, 1.0, (len(env_ids), 1), device=self.device).squeeze(1)
+            self.commands[env_ids, 1] = torch_rand_float(self.command_ranges["lin_vel_y"][0], self.command_ranges["lin_vel_y"][1], (len(env_ids), 1), device=self.device).squeeze(1)
+            if self.cfg.commands.heading_command:
+                self.commands[env_ids, 3] = torch_rand_float(self.command_ranges["heading"][0], self.command_ranges["heading"][1], (len(env_ids), 1), device=self.device).squeeze(1)
+            else:
+                self.commands[env_ids, 2] = torch_rand_float(self.command_ranges["ang_vel_yaw"][0], self.command_ranges["ang_vel_yaw"][1], (len(env_ids), 1), device=self.device).squeeze(1)
 
-        high_vel_env_ids = (env_ids < (self.num_envs * 0.2))
-        high_vel_env_ids = env_ids[high_vel_env_ids.nonzero(as_tuple=True)]
+            high_vel_env_ids = (env_ids < (self.num_envs * 0.2))
+            high_vel_env_ids = env_ids[high_vel_env_ids.nonzero(as_tuple=True)]
 
-        self.commands[high_vel_env_ids, 0] = torch_rand_float(self.command_ranges["lin_vel_x"][0], self.command_ranges["lin_vel_x"][1], (len(high_vel_env_ids), 1), device=self.device).squeeze(1)
+            self.commands[high_vel_env_ids, 0] = torch_rand_float(self.command_ranges["lin_vel_x"][0], self.command_ranges["lin_vel_x"][1], (len(high_vel_env_ids), 1), device=self.device).squeeze(1)
 
-        # set y commands of high vel envs to zero
-        self.commands[high_vel_env_ids, 1:2] *= (torch.norm(self.commands[high_vel_env_ids, 0:1], dim=1) < 1.0).unsqueeze(1)
+            # set y commands of high vel envs to zero
+            self.commands[high_vel_env_ids, 1:2] *= (torch.norm(self.commands[high_vel_env_ids, 0:1], dim=1) < 1.0).unsqueeze(1)
 
         # set small commands to zero
         self.commands[env_ids, :2] *= (torch.norm(self.commands[env_ids, :2], dim=1) > 0.2).unsqueeze(1)
 
-    def _resample_part_commands(self, env_ids):
-        """ Randommly select commands of some environments
-
-        Args:
-            env_ids (List[int]): Environments ids for which new commands are needed
+    def _update_env_command_ranges(self):
+        """Build per-env command range tensors clipped by terrain type's max command range.
+        Mirrors go2_rl_gym's implementation: reads terrain_ids set in _get_env_origins,
+        then clamps each env's range by the corresponding terrain_max_command_ranges entry.
         """
-        # default ranges from command_ranges
-        lin_x_low = self.command_ranges["lin_vel_x"][0]
-        lin_x_high = self.command_ranges["lin_vel_x"][1]
-        ang_low = self.command_ranges["ang_vel_yaw"][0]
-        ang_high = self.command_ranges["ang_vel_yaw"][1]
-
-        # Terrain-aware adjustment: only调整范围，采样逻辑与 _resample_commands 保持一致
-        if self.terrain_type_bins is not None:
-            terrain_types = self.terrain_types[env_ids]
-            bins = self.terrain_type_bins
-            slope_like = (terrain_types < bins[0]) | ((terrain_types >= bins[0]) & (terrain_types < bins[1]))
-            complex_mask = (terrain_types >= bins[1]) & (terrain_types < bins[3]) | (terrain_types >= bins[3])
-
-            # slopes/rough slopes: 放宽到 [-3,3]，但不超过当前 curriculum 限制
-            if torch.any(slope_like):
-                lin_x_low = max(lin_x_low, -3.0)
-                lin_x_high = min(lin_x_high, 3.0)
-                ang_low = max(ang_low, -3.0)
-                ang_high = min(ang_high, 3.0)
-
-            # complex (stairs, discrete obstacles): 固定窄范围
-            if torch.any(complex_mask):
-                lin_x_low = -1.0
-                lin_x_high = 1.0
-                ang_low = -2.0
-                ang_high = 2.0
-
-        # sample commands (保持与 _resample_commands 一致的结构)
-        self.commands[env_ids, 0] = torch_rand_float(lin_x_low, lin_x_high, (len(env_ids), 1), device=self.device).squeeze(1)
-        self.commands[env_ids, 1] = torch_rand_float(self.command_ranges["lin_vel_y"][0], self.command_ranges["lin_vel_y"][1], (len(env_ids), 1), device=self.device).squeeze(1)
-        if self.cfg.commands.heading_command:
-            self.commands[env_ids, 3] = torch_rand_float(self.command_ranges["heading"][0], self.command_ranges["heading"][1], (len(env_ids), 1), device=self.device).squeeze(1)
-        else:
-            self.commands[env_ids, 2] = torch_rand_float(ang_low, ang_high, (len(env_ids), 1), device=self.device).squeeze(1)
-
-        high_vel_env_ids = (env_ids < (self.num_envs * 0.2))
-        high_vel_env_ids = env_ids[high_vel_env_ids.nonzero(as_tuple=True)]
-
-        self.commands[high_vel_env_ids, 0] = torch_rand_float(lin_x_low, lin_x_high, (len(high_vel_env_ids), 1), device=self.device).squeeze(1)
-
-        # set y commands of high vel envs to zero
-        self.commands[high_vel_env_ids, 1:2] *= (torch.norm(self.commands[high_vel_env_ids, 0:1], dim=1) < 1.0).unsqueeze(1)
-
-        # set small commands to zero
-        self.commands[env_ids, :2] *= (torch.norm(self.commands[env_ids, :2], dim=1) > 0.2).unsqueeze(1)
-
+        # Initialize with global command_ranges (same for all envs)
+        self.env_command_ranges = {
+            'lin_vel_x': torch.tensor(self.command_ranges['lin_vel_x'], device=self.device, dtype=torch.float).repeat(self.num_envs, 1),
+            'lin_vel_y': torch.tensor(self.command_ranges['lin_vel_y'], device=self.device, dtype=torch.float).repeat(self.num_envs, 1),
+            'ang_vel_yaw': torch.tensor(self.command_ranges['ang_vel_yaw'], device=self.device, dtype=torch.float).repeat(self.num_envs, 1),
+            'heading': torch.tensor(self.command_ranges['heading'], device=self.device, dtype=torch.float).repeat(self.num_envs, 1),
+        }
+        if not getattr(self.cfg.commands, 'use_terrain_max_command_ranges', False):
+            return
+        terrain_max_cmd_ranges = getattr(self.cfg.commands, 'terrain_max_command_ranges', [])
+        if not terrain_max_cmd_ranges or not hasattr(self, 'terrain_ids'):
+            return
+        for terrain_id, ranges in enumerate(terrain_max_cmd_ranges):
+            env_ids = (self.terrain_ids == terrain_id).nonzero(as_tuple=False).flatten()
+            if len(env_ids) == 0:
+                continue
+            self.env_command_ranges['lin_vel_x'][env_ids, 0] = max(ranges['lin_vel_x'][0], self.command_ranges['lin_vel_x'][0])
+            self.env_command_ranges['lin_vel_x'][env_ids, 1] = min(ranges['lin_vel_x'][1], self.command_ranges['lin_vel_x'][1])
+            self.env_command_ranges['lin_vel_y'][env_ids, 0] = max(ranges['lin_vel_y'][0], self.command_ranges['lin_vel_y'][0])
+            self.env_command_ranges['lin_vel_y'][env_ids, 1] = min(ranges['lin_vel_y'][1], self.command_ranges['lin_vel_y'][1])
+            self.env_command_ranges['ang_vel_yaw'][env_ids, 0] = max(ranges['ang_vel_yaw'][0], self.command_ranges['ang_vel_yaw'][0])
+            self.env_command_ranges['ang_vel_yaw'][env_ids, 1] = min(ranges['ang_vel_yaw'][1], self.command_ranges['ang_vel_yaw'][1])
+            if self.cfg.commands.heading_command:
+                self.env_command_ranges['heading'][env_ids, 0] = max(ranges['heading'][0], self.command_ranges['heading'][0])
+                self.env_command_ranges['heading'][env_ids, 1] = min(ranges['heading'][1], self.command_ranges['heading'][1])
 
     def _compute_torques(self, actions):
         """ Compute torques from actions.
@@ -1108,11 +1096,11 @@ class LeggedRobot(BaseTask):
             self.max_terrain_level = self.cfg.terrain.num_rows
             self.terrain_origins = torch.from_numpy(self.terrain.env_origins).to(self.device).to(torch.float)
             self.env_origins[:] = self.terrain_origins[self.terrain_levels, self.terrain_types]
-            # precompute terrain type column thresholds (for command curriculum per terrain type)
-            self.terrain_type_bins = torch.tensor(
-                [int(np.ceil(p * self.cfg.terrain.num_cols)) for p in self.terrain.proportions],
-                device=self.device,
-            )
+            # build terrain_ids from terrain.cols2id (terrain column -> terrain type id)
+            self.terrain_cols2id = torch.tensor(self.terrain.cols2id, device=self.device)
+            if len(self.terrain_cols2id):
+                self.terrain_ids = self.terrain_cols2id[self.terrain_types]
+            self._update_env_command_ranges()
         else:
             self.custom_origins = False
             self.env_origins = torch.zeros(self.num_envs, 3, device=self.device, requires_grad=False)
@@ -1124,7 +1112,7 @@ class LeggedRobot(BaseTask):
             self.env_origins[:, 0] = spacing * xx.flatten()[:self.num_envs]
             self.env_origins[:, 1] = spacing * yy.flatten()[:self.num_envs]
             self.env_origins[:, 2] = 0.
-            self.terrain_type_bins = None
+            self._update_env_command_ranges()
 
     def _parse_cfg(self, cfg):
         self.dt = self.cfg.control.decimation * self.sim_params.dt

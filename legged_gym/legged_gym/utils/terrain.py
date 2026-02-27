@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # Copyright (c) 2021 ETH Zurich, Nikita Rudin
+from collections import defaultdict
 import torch
 import numpy as np
 from numpy.random import choice
@@ -48,6 +49,8 @@ class Terrain:
         self.xSize = cfg.terrain_length * cfg.num_rows  # 地形总长度 = 8 * 10
         self.ySize = cfg.terrain_width * cfg.num_cols  # 地形总宽度 = 8 * 10
         self.proportions = [np.sum(cfg.terrain_proportions[:i+1]) for i in range(len(cfg.terrain_proportions))]
+        self.name2cols = defaultdict(set)  # terrain type name -> set of column indices
+        self.cols2id = []  # column index -> terrain type id
 
         self.cfg.num_sub_terrains = cfg.num_rows * cfg.num_cols
         self.env_origins = np.zeros((cfg.num_rows, cfg.num_cols, 3))
@@ -92,6 +95,8 @@ class Terrain:
 
                 terrain = self.make_terrain(choice, difficulty)
                 self.add_terrain_to_map(terrain, i, j)
+            self.name2cols[terrain.terrain_name].add(j)
+            self.cols2id.append(terrain.terrain_id)
 
     def selected_terrain(self):
         terrain_type = self.cfg.terrain_kwargs.pop('type')
@@ -123,30 +128,51 @@ class Terrain:
         gap_size = 1. * difficulty
         pit_depth = 1. * difficulty
         if choice < self.proportions[0]:
+            terrain.terrain_name = "smooth_slope"
+            terrain.terrain_id = 0
             if choice < self.proportions[0]/ 2:
                 slope *= -1
             terrain_utils.pyramid_sloped_terrain(terrain, slope=slope, platform_size=3.)
         elif choice < self.proportions[1]:
+            terrain.terrain_name = "rough_slope"
+            terrain.terrain_id = 1
             terrain_utils.pyramid_sloped_terrain(terrain, slope=slope, platform_size=3.)
             terrain_utils.random_uniform_terrain(terrain, min_height=-amplitude, max_height=amplitude, step=0.005, downsampled_scale=0.2)
         elif choice < self.proportions[3]:
             if choice<self.proportions[2]:
+                terrain.terrain_name = "stairs_up"
+                terrain.terrain_id = 2
                 step_height *= -1
+            else:
+                terrain.terrain_name = "stairs_down"
+                terrain.terrain_id = 3
             terrain_utils.pyramid_stairs_terrain(terrain, step_width=0.30, step_height=step_height, platform_size=3.)
         elif choice < self.proportions[4]:
+            terrain.terrain_name = "discrete_obstacles"
+            terrain.terrain_id = 4
             num_rectangles = 20
             rectangle_min_size = 1.
             rectangle_max_size = 2.
             terrain_utils.discrete_obstacles_terrain(terrain, discrete_obstacles_height, rectangle_min_size, rectangle_max_size, num_rectangles, platform_size=3.)
         elif choice < self.proportions[5]:
+            terrain.terrain_name = "stepping_stones"
+            terrain.terrain_id = 5
             terrain_utils.stepping_stones_terrain(terrain, stone_size=stepping_stones_size, stone_distance=stone_distance, max_height=0., platform_size=4.)
         elif choice < self.proportions[6]:
+            terrain.terrain_name = "gap"
+            terrain.terrain_id = 6
             gap_terrain(terrain, gap_size=gap_size, platform_size=3.)
         elif choice < self.proportions[7]:
+            terrain.terrain_name = "pit"
+            terrain.terrain_id = 7
             pit_terrain(terrain, depth=pit_depth, platform_size=4.)
         elif choice < self.proportions[8]:
+            terrain.terrain_name = "flat"
+            terrain.terrain_id = 8
             pass
         elif choice < self.proportions[9]:
+            terrain.terrain_name = "random_uniform"
+            terrain.terrain_id = 9
             terrain_utils.random_uniform_terrain(terrain, min_height=-0.05, max_height=0.05,
                                                  step=0.005, downsampled_scale=0.2)
             terrain.height_field_raw[0:terrain.length // 2, :] = 0
