@@ -98,7 +98,7 @@ class Go1RoughCfg( LeggedRobotCfg ):
         use_terrain_max_command_ranges = False # limit command ranges per terrain type
         # terrain types for go1: [smooth_slope(0), rough_slope(1), stairs_up(2), stairs_down(3), discrete_obstacles(4)]
         terrain_max_command_ranges = [
-            {'lin_vel_x': [-1.5, 1.5], 'lin_vel_y': [-1.0, 1.0], 'ang_vel_yaw': [-1.0, 1.0], 'heading': [-3.14, 3.14]},  # 0: smooth slope
+            {'lin_vel_x': [-2.0, 2.0], 'lin_vel_y': [-1.0, 1.0], 'ang_vel_yaw': [-1.0, 1.0], 'heading': [-3.14, 3.14]},  # 0: smooth slope
             {'lin_vel_x': [-1.5, 1.5], 'lin_vel_y': [-1.0, 1.0], 'ang_vel_yaw': [-1.0, 1.0], 'heading': [-3.14, 3.14]},  # 1: rough slope
             {'lin_vel_x': [-1.0, 1.0], 'lin_vel_y': [-1.0, 1.0], 'ang_vel_yaw': [-1.0, 1.0], 'heading': [-3.14, 3.14]},  # 2: stairs up
             {'lin_vel_x': [-1.0, 1.0], 'lin_vel_y': [-1.0, 1.0], 'ang_vel_yaw': [-1.0, 1.0], 'heading': [-3.14, 3.14]},  # 3: stairs down
@@ -266,6 +266,6 @@ class Go1RoughCfgPPO( LeggedRobotCfgPPO ):
     class runner( LeggedRobotCfgPPO.runner ):
         run_name = ''
         experiment_name = 'rough1_go1'
-        save_interval = 100
+        save_interval = 200
 
   

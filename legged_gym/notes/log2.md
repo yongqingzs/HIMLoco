@@ -39,6 +39,48 @@ calf_pose0 = -0.02
 max_forward_curriculum = 2.0
 {'lin_vel_x': [-2.0, 2.0], 'lin_vel_y': [-1.0, 1.0], 'ang_vel_yaw': [-1.0, 1.0], 'heading': [-3.14, 3.14]},  # 0: smooth slope
 # mr_lag21
+'''
+训练停止
+'''
+
+
+# like mr_lag19, but:
+thigh_pose0 = -0.01
+calf_pose0 = -0.01
+# mr_lag22
+'''
+10000 以后训练崩溃
+
+在 a40 上训练 mr_lag22_a40，发现 2000 时走路姿势奇怪，和 5090 表现类似
+'''
+
+# like mr_lag19, but:
+max_forward_curriculum = 2.0
+{'lin_vel_x': [-2.0, 2.0], 'lin_vel_y': [-1.0, 1.0], 'ang_vel_yaw': [-1.0, 1.0], 'heading': [-3.14, 3.14]},  # 0: smooth slope
+thigh_pose0 = -0.01
+calf_pose0 = -0.01
+# mr_lag23
+'''
+7000 时测试，vel >= 1.5 时，表现不佳
+'''
+
+
+# like mr_lag19, but:
+foot_clearance = -0.01
+feet_air_time = 0
+# mr_lag24
+'''
+走路姿势奇怪，6000 后发散
+'''
+
+
+# like mr_lag19, but:
+use_terrain_max_command_ranges = False
+if self.command_ranges["lin_vel_x"][1] < 1.0:
+    self.commands[env_ids, 0] = torch_rand_float(self.command_ranges["lin_vel_x"][0], self.command_ranges["lin_vel_x"][1], (len(env_ids), 1), device=self.device).squeeze(1)
+else:
+    self.commands[env_ids, 0] = torch_rand_float(-1.0, 1.0, (len(env_ids), 1), device=self.device).squeeze(1)
+# mr_lag25
 ```
 
 - 0227-1
