@@ -62,12 +62,15 @@ calf_pose0 = -0.01
 # mr_lag23
 '''
 7000 时测试，vel >= 1.5 时，表现不佳
+12700 没有发散
 '''
 
 
 # like mr_lag19, but:
 foot_clearance = -0.01
 feet_air_time = 0
+thigh_pose0 = -0.01
+calf_pose0 = -0.01
 # mr_lag24
 '''
 走路姿势奇怪，6000 后发散
@@ -80,7 +83,27 @@ if self.command_ranges["lin_vel_x"][1] < 1.0:
     self.commands[env_ids, 0] = torch_rand_float(self.command_ranges["lin_vel_x"][0], self.command_ranges["lin_vel_x"][1], (len(env_ids), 1), device=self.device).squeeze(1)
 else:
     self.commands[env_ids, 0] = torch_rand_float(-1.0, 1.0, (len(env_ids), 1), device=self.device).squeeze(1)
+thigh_pose0 = -0.01
+calf_pose0 = -0.01
 # mr_lag25
+'''
+2000 表现类似 mr_lag13，17000 后发散
+'''
+
+# like mr_lag19, but:
+thigh_pose0 = -0.01
+calf_pose0 = -0.01
+max_forward_curriculum = 2.0
+{'lin_vel_x': [-2.0, 2.0], 'lin_vel_y': [-1.0, 1.0], 'ang_vel_yaw': [-1.0, 1.0], 'heading': [-3.14, 3.14]},  # 0: smooth slope
+self._update_env_command_ranges()  # fix
+# mr_lag26
+'''
+2000 发散
+'''
+
+# like mr_lag26, but:
+max_forward_curriculum = 1.5
+# mr_lag27
 ```
 
 - 0227-1
@@ -92,5 +115,5 @@ like mr_lag13, but:
 
 mr_lag20
 
-3500后发散，走路姿势奇怪
+3500 后发散，走路姿势奇怪
 ```
